@@ -1,4 +1,4 @@
-// user.js – Inventory Counts front-end (fixed)
+// public/js/user.js  –  CLEAN & WORKING
 
 /* ---------- DOM refs ---------- */
 const listSelect   = document.getElementById('listSelect');
@@ -62,64 +62,50 @@ listSelect.addEventListener('change', renderList);
 
 /* ---------- item selection ---------- */
 selectBtn.addEventListener('click', async () => {
-  const codeRaw = itemCodeEl.value.trim();
-  if (!codeRaw) return alert('Enter item code');
+  const raw = itemCodeEl.value.trim();
+  if (!raw) return alert('Enter item code');
 
-  const code = pad13(codeRaw);
+  const code = pad13(raw);
 
-  // If not in master, grab any previous user-supplied data for this list
-  const listRes  = await fetch(`/api/lists/${listSelect.value}`);
-  const thisList = await listRes.json();
-  if (!masterItems[code] && thisList.items[code])
-    masterItems[code] = thisList.items[code];
+  // If not in master, pull any previous user‐entered data from this list
+  const r  = await fetch(`/api/lists/${listSelect.value}`);
+  const ls = await r.json();
+  if (!masterItems[code] && ls.items[code])
+    masterItems[code] = ls.items[code];
 
   prepareDetails(code);
   detailsWrap.style.display = 'block';
   customQtyEl.focus();
 });
 itemCodeEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    selectBtn.click();
-  }
+  if (e.key === 'Enter') { e.preventDefault(); selectBtn.click(); }
 });
 
 function prepareDetails(code) {
-  const master = masterItems[code];
-  const locked = !!master;
-  [brandEl, descEl, priceEl].forEach(el => (el.readOnly = locked));
-  if (master) {
-    brandEl.value = master.brand        || '';
-    descEl.value  = master.description  || '';
-    priceEl.value = master.price ?? '';
-  } else {
-    brandEl.value = descEl.value = priceEl.value = '';
-  }
+  const m = masterItems[code];
+  const lock = !!m;
+  [brandEl, descEl, priceEl].forEach(el => el.readOnly = lock);
+  if (m) { brandEl.value = m.brand||''; descEl.value = m.description||''; priceEl.value = m.price??''; }
+  else   { brandEl.value = descEl.value = priceEl.value = ''; }
 }
 
 /* ---------- quantity updates ---------- */
-document
-  .querySelectorAll('button[data-delta]')
-  .forEach(btn =>
-    btn.addEventListener('click', () =>
-      updateQty(parseInt(btn.dataset.delta, 10))
-    )
-  );
+document.querySelectorAll('button[data-delta]')
+  .forEach(btn => btn.addEventListener('click', () =>
+    updateQty(parseInt(btn.dataset.delta,10))
+  ));
 enterBtn.addEventListener('click', () =>
-  updateQty(parseInt(customQtyEl.value, 10))
+  updateQty(parseInt(customQtyEl.value,10))
 );
 customQtyEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    enterBtn.click();
-  }
+  if (e.key === 'Enter') { e.preventDefault(); enterBtn.click(); }
 });
 
 async function updateQty(delta) {
   if (!delta) return;
-  const codeRaw = itemCodeEl.value.trim();
-  if (!codeRaw) return;
-  const code = pad13(codeRaw);
+  const raw = itemCodeEl.value.trim();
+  if (!raw) return;
+  const code = pad13(raw);
 
   const payload = {
     itemCode   : code,
@@ -133,12 +119,8 @@ async function updateQty(delta) {
     headers: { 'Content-Type': 'application/json' },
     body   : JSON.stringify(payload)
   });
-  if (res.ok) {
-    resetForm();
-    renderList();
-  } else {
-    alert('Server error');
-  }
+  if (res.ok) { resetForm(); renderList(); }
+  else        { alert('Server error');   }
 }
 
 function resetForm() {
@@ -159,17 +141,15 @@ async function renderList() {
   Object.values(list.items).forEach(it => {
     const total = it.qty * it.price;
     grand += total;
-    itemsTable.insertAdjacentHTML(
-      'beforeend',
-      `<tr>
-         <td data-label="Code">${it.code}</td>
-         <td data-label="Brand">${it.brand}</td>
-         <td data-label="Description">${it.description}</td>
-         <td data-label="Price">${it.price.toFixed(2)}</td>
-         <td data-label="Qty">${it.qty}</td>
-         <td data-label="Total">${total.toFixed(2)}</td>
-       </tr>`
-    );
+    itemsTable.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td data-label="Code">${it.code}</td>
+        <td data-label="Brand">${it.brand}</td>
+        <td data-label="Description">${it.description}</td>
+        <td data-label="Price">${it.price.toFixed(2)}</td>
+        <td data-label="Qty">${it.qty}</td>
+        <td data-label="Total">${total.toFixed(2)}</td>
+      </tr>`);
   });
-  grandTotalEl.textContent = \`Grand Total: $\${grand.toFixed(2)}\`;
+  grandTotalEl.textContent = `Grand Total: $${grand.toFixed(2)}`;
 }
