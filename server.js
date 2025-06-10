@@ -29,6 +29,7 @@ const wanted = {
   brand: ["main item-brand", "brand"],
   description: ["main item-description", "description"],
   price: ["price-regular-price", "price active price", "price", "unit price"]
+  subdept: ["sub-department-description"]    // column AS in your CSV
 };
 function pick(row, aliases){
   for(const a of aliases){
@@ -49,7 +50,8 @@ try {
       code,
       brand: pick(r,wanted.brand)||"",
       description: pick(r,wanted.description)||"",
-      price: parseFloat(pick(r,wanted.price)||0)
+      price:        parseFloat(pick(r,wanted.price)||0),
+      subdept:      pick(r,wanted.subdept)     || ""    // <— store it here
     });
   });
   console.log(`Loaded ${masterItems.size} master items.`);
@@ -124,27 +126,61 @@ app.delete("/api/lists/:name",(req,res)=>{
 
 app.delete("/api/lists",(_,res)=>{saveLists({});res.json({message:"all cleared"});});
 
-app.get("/api/export/:name",(req,res)=>{
-  const list=loadLists()[req.params.name];
-  if(!list) return res.status(404).json({error:"List not found"});
-  const rows=[["Item Code","Brand","Description","Price","Qty","Total"]];
-  let grand=0;
-  Object.values(list.items).forEach(it=>{const t=it.qty*it.price;grand+=t;rows.push([it.code,it.brand,it.description,it.price,it.qty,t]);});
+app.get("/api/export/:name", (req, res) => {
+  const list = loadLists()[req.params.name];
+  if (!list) return res.status(404).json({ error: "List not found" });
+
+  // Header now includes Sub-department
+  const rows = [["Item Code","Brand","Sub-department","Description","Price","Quantity","Total"]];
+  let grand = 0;
+
+  Object.values(list.items).forEach(it => {
+    const t = it.qty * it.price;
+    grand += t;
+    // Look up subdept from masterItems (loaded from CSV column AS)
+    const subdept = masterItems.get(it.code)?.subdept || "";
+    rows.push([
+      it.code,
+      it.brand,
+      subdept,
+      it.description,
+      it.price,
+      it.qty,
+      t
+    ]);
+  });
+
   rows.push(["","","","","Grand",grand]);
-  res.setHeader("Content-Type","text/csv");
-  res.setHeader("Content-Disposition",`attachment; filename=${req.params.name}.csv`);
-  res.send(rows.map(r=>r.join(",")).join("\n"));
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename=${req.params.name}.csv`);
+  res.send(rows.map(r => r.join(",")).join("\n"));
 });
 
-app.get("/api/exportall",(_,res)=>{
-  const lists=loadLists();
-  const rows=[["List","Item Code","Brand","Description","Price","Qty","Total"]];
-  Object.entries(lists).forEach(([n,l])=>{
-    Object.values(l.items).forEach(it=>rows.push([n,it.code,it.brand,it.description,it.price,it.qty,it.qty*it.price]));
+app.get("/api/exportall", (_, res) => {
+  const lists = loadLists();
+  // Include Sub-department in the header
+  const rows = [["List","Item Code","Brand","Sub-department","Description","Price","Qty","Total"]];
+
+  Object.entries(lists).forEach(([listName, list]) => {
+    Object.values(list.items).forEach(it => {
+      const subdept = masterItems.get(it.code)?.subdept || "";
+      rows.push([
+        listName,
+        it.code,
+        it.brand,
+        subdept,
+        it.description,
+        it.price,
+        it.qty,
+        it.qty * it.price
+      ]);
+    });
   });
-  res.setHeader("Content-Type","text/csv");
-  res.setHeader("Content-Disposition","attachment; filename=all_lists.csv");
-  res.send(rows.map(r=>r.join(",")).join("\n"));
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=all_lists.csv");
+  res.send(rows.map(r => r.join(",")).join("\n"));
 });
 
 /******************** start ********************/
