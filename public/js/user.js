@@ -78,6 +78,12 @@ itemCodeEl.addEventListener('keydown', e => {
   }
 });
 
+// If not in master, look in current list for previous entry
+const listRes = await fetch(`/api/lists/${listSelect.value}`);
+const currentList = await listRes.json();
+if (!masterItems[code] && currentList.items[code]) {
+  masterItems[code] = currentList.items[code];   // cache it locally
+}
 function prepareDetails(code) {
   const master = masterItems[code];
   const locked = !!master;
