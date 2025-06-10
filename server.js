@@ -25,10 +25,10 @@ if (!fs.existsSync(LISTS_FILE)) fs.writeFileSync(LISTS_FILE, "{}", "utf8");
 // normalise headers from your CSV export
 const clean = s => String(s||"").replace(/\"/g, "").trim().toLowerCase();
 const wanted = {
-  code : ["main code", "item code", "code"],
-  brand: ["main item-brand", "brand"],
-  description: ["main item-description", "description"],
-  price: ["price-regular-price", "price active price", "price", "unit price"],
+  code : ["main code"],
+  brand: ["main item-brand"],
+  description: ["main item-description"],
+  price: ["price-regular-price"],
   subdept: ["sub-department-number"]    // column AS in your CSV
 };
 function pick(row, aliases){
