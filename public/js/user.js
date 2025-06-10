@@ -67,6 +67,12 @@ selectBtn.addEventListener('click', () => {
   const codeRaw = itemCodeEl.value.trim();
   if (!codeRaw) return alert('Enter item code');
   const code = pad13(codeRaw);
+  /* ------- INSERT THESE 4 LINES ------- */
+  const listRes   = await fetch(`/api/lists/${listSelect.value}`);
+  const thisList  = await listRes.json();
+  if (!masterItems[code] && thisList.items[code])
+    masterItems[code] = thisList.items[code];
+  /* ------------------------------------ */
   prepareDetails(code);
   detailsWrap.style.display = 'block';
   customQtyEl.focus();
