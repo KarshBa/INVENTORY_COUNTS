@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory Counts – Admin</title>
+  <style>
+    body{font-family:Arial, sans-serif;background:#f9f9f9;margin:0;padding:0;}header{background:#202124;color:white;padding:1rem;text-align:center;}main{padding:1rem;max-width:900px;margin:auto;}table{width:100%;border-collapse:collapse;margin-top:1rem;}th,td{border:1px solid #ddd;padding:.5rem;text-align:left;}th{background:#eee;}button{padding:.5rem 1rem;border:none;border-radius:4px;background:#202124;color:white;margin:.25rem;}button.danger{background:#d93025;}button.secondary{background:#5f6368;}@media(max-width:600px){table,thead,tbody,th,td,tr{display:block;}tr{margin-bottom:.75rem;}th{position:absolute;left:-9999px;}td{border:none;position:relative;padding-left:50%;}td::before{content:attr(data-label);position:absolute;left:0;width:45%;padding-left:.5rem;font-weight:bold;}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Inventory Counts – Admin</h1>
+</header>
+<main>
+  <div>
+    <button id="exportAll">Export ALL lists</button>
+    <button class="danger" id="deleteAll">Delete ALL lists</button>
+  </div>
+  <table id="listsTable">
+    <thead><tr><th>List</th><th># Items</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</main>
+<script>
+const listsTableBody=document.querySelector('#listsTable tbody');
+async function load(){
+  const res=await fetch('/api/lists');
+  const lists=await res.json();
+  listsTableBody.innerHTML='';
+  Object.entries(lists).forEach(([name,list])=>{
+    const row=document.createElement('tr');
+    row.innerHTML=`<td data-label="List">${name}</td><td data-label="# Items">${Object.keys(list.items).length}</td><td data-label="Actions"></td>`;
+    const cell=row.querySelector('td:last-child');
+    const exp=document.createElement('button');exp.textContent='Export';exp.addEventListener('click',()=>window.location=`/api/export/${name}`);
+    const del=document.createElement('button');del.textContent='Delete';del.className='danger';del.addEventListener('click',()=>deleteList(name));
+    cell.append(exp,del);
+    listsTableBody.appendChild(row);
+  });
+}
+async function deleteList(name){
+  if(!confirm(`Delete list ${name}?`))return;
+  const res=await fetch(`/api/lists/${name}`,{method:'DELETE'});
+  if(res.ok) load();
+}
+
+document.getElementById('exportAll').addEventListener('click',()=>{
+  window.location='/api/exportall';
+});
+
+document.getElementById('deleteAll').addEventListener('click',async()=>{
+  if(!confirm('Delete ALL lists?'))return;
+  const res=await fetch('/api/lists',{method:'DELETE'});
+  if(res.ok) load();
+});
+
+load();
+</script>
+</body>
+</html>
