@@ -28,7 +28,7 @@ const wanted = {
   code : ["main code", "item code", "code"],
   brand: ["main item-brand", "brand"],
   description: ["main item-description", "description"],
-  price: ["price-regular-price", "price active price", "price", "unit price"]
+  price: ["price-regular-price", "price active price", "price", "unit price"],
   subdept: ["sub-department-description"]    // column AS in your CSV
 };
 function pick(row, aliases){
