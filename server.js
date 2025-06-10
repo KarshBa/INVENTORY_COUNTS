@@ -29,7 +29,7 @@ const wanted = {
   brand: ["main item-brand", "brand"],
   description: ["main item-description", "description"],
   price: ["price-regular-price", "price active price", "price", "unit price"],
-  subdept: ["sub-department-description"]    // column AS in your CSV
+  subdept: ["sub-department-number"]    // column AS in your CSV
 };
 function pick(row, aliases){
   for(const a of aliases){
