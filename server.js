@@ -116,9 +116,12 @@ app.post("/api/lists/:name/items", (req, res) => {
     entry.description = master.description;
     entry.price = master.price;
   } else {
-    entry.brand = brand ?? entry.brand;
-    entry.description = description ?? entry.description;
-    entry.price = price !== undefined ? parseFloat(price) : entry.price;
+// keep previous values unless the user sent non-blank data
+  if (brand && brand.trim())        entry.brand       = brand.trim();
+  if (description && description.trim())
+                                    entry.description = description.trim();
+  if (price !== undefined && price !== '')
+                                    entry.price       = parseFloat(price);
   }
   entry.qty += parseFloat(delta) || 0;
   if (entry.qty === 0) delete list.items[itemCode];
