@@ -1,96 +1,156 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inventory Counts – User</title>
-  <link rel="stylesheet" href="styles.css" />
-  <style>
-    /* Desktop: use default table layout from styles.css */
-    @media (min-width: 601px) {
-      .table-responsive { overflow: visible; }
-      #itemsTable { width: 100%; table-layout: auto; }
-    }
-    /* Mobile: horizontal scroll, preserve headers, no block layout */
-    @media (max-width: 600px) {
-      .table-responsive { overflow-x: auto; }
-      #itemsTable {
-        width: max-content;
-        min-width: 100%;
-        border-collapse: collapse;
-      }
-      #itemsTable th, #itemsTable td {
-        white-space: nowrap;
-        padding: 0.5rem;
-      }
-    }
-  </style>
-</head>
-<body>
-<header><h1>Inventory Counts</h1></header>
-<main>
-  <div class="input-group flex">
-    <select id="listSelect"></select>
-    <input type="text" id="newListName" placeholder="New list name" />
-    <button id="createListBtn">Create</button>
-  </div>
-  <hr />
-  <form id="itemForm" autocomplete="off">
-    <div class="input-group flex" style="align-items:flex-end;">
-      <div style="flex:1;">
-        <label for="itemCode">Item Code</label>
-        <input type="text" id="itemCode" inputmode="numeric" pattern="[0-9]*" required />
-      </div>
-      <button type="button" id="selectBtn" class="secondary">Select</button>
-    </div>
-    <div id="detailsWrap" style="display:none;">
-      <div class="flex">
-        <div style="flex:1;min-width:120px;"><label for="brand">Brand</label><input type="text" id="brand" /></div>
-        <div style="flex:2;"><label for="desc">Description</label><input type="text" id="desc" /></div>
-      </div>
-      <div class="input-group" style="max-width:200px;"><label for="price">Price</label><input type="number" step="0.01" id="price" /></div>
-      <div class="flex" style="margin-top:.5rem;align-items:flex-end;">
-        <button type="button" data-delta="-5">-5</button>
-        <button type="button" data-delta="-1">-1</button>
-        <input type="number" id="customQty" value="1" style="width:90px;" />
-        <button type="button" id="enterBtn" class="secondary">Enter</button>
-        <button type="button" data-delta="1">+1</button>
-        <button type="button" data-delta="5">+5</button>
-      </div>
-    </div>
-  </form>
+// public/js/user.js – Inventory Counts front-end (CORRECTED)
 
-  <div class="table-responsive">
-    <table id="itemsTable">
-      <thead>
-        <tr><th>Code</th><th>Brand</th><th>Description</th><th>Price</th><th>Qty</th><th>Total</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-  <h3 id="grandTotal"></h3>
-</main>
-<script src="js/user.js"></script>
-<script>
-  // Override renderList to trim to last 3 on mobile
-  const _origRender = renderList;
-  renderList = async function() {
-    await _origRender();
-    if (window.innerWidth <= 600) {
-      const tb = document.querySelector('#itemsTable tbody');
-      const rows = Array.from(tb.children);
-      if (rows.length > 3) {
-        tb.innerHTML = '';
-        rows.slice(-3).forEach(r => tb.appendChild(r));
-      }
-    }
-  };
+/* ---------- DOM refs ---------- */
+const listSelect   = document.getElementById('listSelect');
+const newListName  = document.getElementById('newListName');
+const createListBtn= document.getElementById('createListBtn');
+const itemCodeEl   = document.getElementById('itemCode');
+const selectBtn    = document.getElementById('selectBtn');
+const detailsWrap  = document.getElementById('detailsWrap');
+const brandEl      = document.getElementById('brand');
+const descEl       = document.getElementById('desc');
+const priceEl      = document.getElementById('price');
+const customQtyEl  = document.getElementById('customQty');
+const enterBtn     = document.getElementById('enterBtn');
+const itemsTable   = document.querySelector('#itemsTable tbody');
+const grandTotalEl = document.getElementById('grandTotal');
 
-  // Focus on itemCode input on startup
-  window.addEventListener('load', () => {
-    const codeField = document.getElementById('itemCode');
-    if (codeField) codeField.focus();
+let masterItems = {};
+const pad13 = c => String(c).padStart(13,'0');   // pad codes to 13 digits
+
+/* ---------- initial load ---------- */
+(async () => {
+  await loadMaster();
+  await loadLists();
+})();
+
+/* ---------- helper functions ---------- */
+async function loadMaster() {
+  const res = await fetch('/api/items');
+  masterItems = await res.json();
+}
+async function loadLists() {
+  const res   = await fetch('/api/lists');
+  const lists = await res.json();
+  listSelect.innerHTML = Object.keys(lists)
+    .map(n => `<option value="${n}">${n}</option>`)
+    .join('');
+  if (Object.keys(lists).length) {
+    listSelect.value = Object.keys(lists)[0];
+    await renderList();
+  }
+}
+
+/* ---------- create new list ---------- */
+createListBtn.addEventListener('click', async () => {
+  const name = newListName.value.trim();
+  if (!name) return alert('Enter list name');
+  const res = await fetch('/api/lists', {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify({ name })
   });
-</script>
-</body>
-</html>
+  if (res.ok) {
+    await loadLists();
+    listSelect.value = name;
+    newListName.value = '';
+  } else {
+    alert('Could not create list');
+  }
+});
+
+/* ---------- select item code ---------- */
+selectBtn.addEventListener('click', async () => {
+  const raw = itemCodeEl.value.trim();
+  if (!raw) return alert('Enter item code');
+
+  const code = pad13(raw);
+  // Autofill custom entries if present
+  const listRes = await fetch(`/api/lists/${listSelect.value}`);
+  const thisList = await listRes.json();
+  if (!masterItems[code] && thisList.items[code]) {
+    masterItems[code] = thisList.items[code];
+  }
+
+  prepareDetails(code);
+  detailsWrap.style.display = 'block';
+  customQtyEl.focus();
+});
+itemCodeEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    selectBtn.click();
+  }
+});
+
+function prepareDetails(code) {
+  const m = masterItems[code] || {};
+  const locked = !!masterItems[code];
+  [brandEl, descEl, priceEl].forEach(el => el.readOnly = locked);
+  brandEl.value = m.brand || '';
+  descEl.value  = m.description || '';
+  priceEl.value = m.price ?? '';
+}
+
+/* ---------- quantity controls ---------- */
+document.querySelectorAll('button[data-delta]').forEach(btn => {
+  btn.addEventListener('click', () => updateQty(parseInt(btn.dataset.delta,10)));
+});
+enterBtn.addEventListener('click', () => updateQty(parseInt(customQtyEl.value,10)));
+customQtyEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    enterBtn.click();
+  }
+});
+
+async function updateQty(delta) {
+  if (!delta) return;
+  const raw = itemCodeEl.value.trim();
+  if (!raw) return;
+  const code = pad13(raw);
+
+  const payload = { itemCode: code, brand: brandEl.value, description: descEl.value, price: priceEl.value, delta };
+  const res = await fetch(`/api/lists/${listSelect.value}/items`, {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify(payload)
+  });
+  if (res.ok) {
+    resetForm();
+    renderList();
+  } else {
+    alert('Server error');
+  }
+}
+
+function resetForm() {
+  itemCodeEl.value = '';
+  customQtyEl.value = 1;
+  detailsWrap.style.display = 'none';
+  itemCodeEl.focus();
+}
+
+/* ---------- render list & mobile trim ---------- */
+async function renderList() {
+  const res = await fetch(`/api/lists/${listSelect.value}`);
+  const data = await res.json();
+  itemsTable.innerHTML = '';
+  let grand = 0;
+  data.items.forEach(it => { /* assuming items is an object */ });
+  Object.values(data.items).forEach(it => {
+    const total = it.qty * it.price;
+    grand += total;
+    itemsTable.insertAdjacentHTML('beforeend', `<tr><td>${it.code}</td><td>${it.brand}</td><td>${it.description}</td><td>${it.price.toFixed(2)}</td><td>${it.qty}</td><td>${total.toFixed(2)}</td></tr>`);
+  });
+  grandTotalEl.textContent = `Grand Total: $${grand.toFixed(2)}`;
+
+  // mobile: keep only last 3
+  if (window.innerWidth <= 600) {
+    const rows = Array.from(itemsTable.children);
+    if (rows.length > 3) {
+      itemsTable.innerHTML = '';
+      rows.slice(-3).forEach(r => itemsTable.appendChild(r));
+    }
+  }
+}
