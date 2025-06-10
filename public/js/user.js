@@ -1,4 +1,4 @@
-// user.js – Inventory Counts front-end (COMPLETE)
+// user.js – Inventory Counts front-end (fixed)
 
 /* ---------- DOM refs ---------- */
 const listSelect   = document.getElementById('listSelect');
@@ -16,9 +16,7 @@ const itemsTable   = document.querySelector('#itemsTable tbody');
 const grandTotalEl = document.getElementById('grandTotal');
 
 let masterItems = {};
-
-/* ---------- helpers ---------- */
-const pad13 = c => c.padStart(13,'0');   // make “1” → “0000000000001”
+const pad13 = c => c.padStart(13,'0');   // “1” → “0000000000001”
 
 /* ---------- initial ---------- */
 (async () => {
@@ -26,11 +24,11 @@ const pad13 = c => c.padStart(13,'0');   // make “1” → “0000000000001”
   await loadLists();
 })();
 
+/* ---------- helpers ---------- */
 async function loadMaster() {
   const res = await fetch('/api/items');
   masterItems = await res.json();
 }
-
 async function loadLists() {
   const res   = await fetch('/api/lists');
   const lists = await res.json();
@@ -63,16 +61,18 @@ createListBtn.addEventListener('click', async () => {
 listSelect.addEventListener('change', renderList);
 
 /* ---------- item selection ---------- */
-selectBtn.addEventListener('click', () => {
+selectBtn.addEventListener('click', async () => {
   const codeRaw = itemCodeEl.value.trim();
   if (!codeRaw) return alert('Enter item code');
+
   const code = pad13(codeRaw);
-  /* ------- INSERT THESE 4 LINES ------- */
-  const listRes   = await fetch(`/api/lists/${listSelect.value}`);
-  const thisList  = await listRes.json();
+
+  // If not in master, grab any previous user-supplied data for this list
+  const listRes  = await fetch(`/api/lists/${listSelect.value}`);
+  const thisList = await listRes.json();
   if (!masterItems[code] && thisList.items[code])
     masterItems[code] = thisList.items[code];
-  /* ------------------------------------ */
+
   prepareDetails(code);
   detailsWrap.style.display = 'block';
   customQtyEl.focus();
@@ -84,12 +84,6 @@ itemCodeEl.addEventListener('keydown', e => {
   }
 });
 
-// If not in master, look in current list for previous entry
-const listRes = await fetch(`/api/lists/${listSelect.value}`);
-const currentList = await listRes.json();
-if (!masterItems[code] && currentList.items[code]) {
-  masterItems[code] = currentList.items[code];   // cache it locally
-}
 function prepareDetails(code) {
   const master = masterItems[code];
   const locked = !!master;
@@ -177,5 +171,5 @@ async function renderList() {
        </tr>`
     );
   });
-  grandTotalEl.textContent = `Grand Total: $${grand.toFixed(2)}`;
+  grandTotalEl.textContent = \`Grand Total: $\${grand.toFixed(2)}\`;
 }
