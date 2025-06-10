@@ -1,34 +1,38 @@
+// user.js – Inventory Counts front-end (COMPLETE)
 
-// user.js – all front‑end logic for Inventory Counts
-const listSelect = document.getElementById('listSelect');
-const newListName = document.getElementById('newListName');
-const createListBtn = document.getElementById('createListBtn');
-const itemCodeEl = document.getElementById('itemCode');
-const selectBtn = document.getElementById('selectBtn');
-const detailsWrap = document.getElementById('detailsWrap');
-const brandEl = document.getElementById('brand');
-const descEl = document.getElementById('desc');
-const priceEl = document.getElementById('price');
-const customQtyEl = document.getElementById('customQty');
-const enterBtn = document.getElementById('enterBtn');
-const itemsTableBody = document.querySelector('#itemsTable tbody');
+/* ---------- DOM refs ---------- */
+const listSelect   = document.getElementById('listSelect');
+const newListName  = document.getElementById('newListName');
+const createListBtn= document.getElementById('createListBtn');
+const itemCodeEl   = document.getElementById('itemCode');
+const selectBtn    = document.getElementById('selectBtn');
+const detailsWrap  = document.getElementById('detailsWrap');
+const brandEl      = document.getElementById('brand');
+const descEl       = document.getElementById('desc');
+const priceEl      = document.getElementById('price');
+const customQtyEl  = document.getElementById('customQty');
+const enterBtn     = document.getElementById('enterBtn');
+const itemsTable   = document.querySelector('#itemsTable tbody');
 const grandTotalEl = document.getElementById('grandTotal');
 
 let masterItems = {};
 
-// ---------- initial ----------
+/* ---------- helpers ---------- */
+const pad13 = c => c.padStart(13,'0');   // make “1” → “0000000000001”
+
+/* ---------- initial ---------- */
 (async () => {
   await loadMaster();
   await loadLists();
 })();
 
-// ---------- fetch helpers ----------
 async function loadMaster() {
   const res = await fetch('/api/items');
   masterItems = await res.json();
 }
+
 async function loadLists() {
-  const res = await fetch('/api/lists');
+  const res   = await fetch('/api/lists');
   const lists = await res.json();
   listSelect.innerHTML = Object.keys(lists)
     .map(n => `<option value="${n}">${n}</option>`)
@@ -39,14 +43,14 @@ async function loadLists() {
   }
 }
 
-// ---------- list create ----------
+/* ---------- list create ---------- */
 createListBtn.addEventListener('click', async () => {
   const name = newListName.value.trim();
   if (!name) return alert('Enter list name');
   const res = await fetch('/api/lists', {
-    method: 'POST',
+    method : 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body   : JSON.stringify({ name })
   });
   if (res.ok) {
     await loadLists();
@@ -58,10 +62,11 @@ createListBtn.addEventListener('click', async () => {
 });
 listSelect.addEventListener('change', renderList);
 
-// ---------- item selection ----------
+/* ---------- item selection ---------- */
 selectBtn.addEventListener('click', () => {
-  const code = itemCodeEl.value.trim();
-  if (!code) return alert('Enter item code');
+  const codeRaw = itemCodeEl.value.trim();
+  if (!codeRaw) return alert('Enter item code');
+  const code = pad13(codeRaw);
   prepareDetails(code);
   detailsWrap.style.display = 'block';
   customQtyEl.focus();
@@ -78,26 +83,24 @@ function prepareDetails(code) {
   const locked = !!master;
   [brandEl, descEl, priceEl].forEach(el => (el.readOnly = locked));
   if (master) {
-    brandEl.value = master.brand || '';
-    descEl.value = master.description || '';
+    brandEl.value = master.brand        || '';
+    descEl.value  = master.description  || '';
     priceEl.value = master.price ?? '';
   } else {
-    brandEl.value = '';
-    descEl.value = '';
-    priceEl.value = '';
+    brandEl.value = descEl.value = priceEl.value = '';
   }
 }
 
-// ---------- quantity updates ----------
+/* ---------- quantity updates ---------- */
 document
   .querySelectorAll('button[data-delta]')
   .forEach(btn =>
     btn.addEventListener('click', () =>
-      updateQty(parseInt(btn.dataset.delta, 10)),
-    ),
+      updateQty(parseInt(btn.dataset.delta, 10))
+    )
   );
 enterBtn.addEventListener('click', () =>
-  updateQty(parseInt(customQtyEl.value, 10)),
+  updateQty(parseInt(customQtyEl.value, 10))
 );
 customQtyEl.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
@@ -108,19 +111,21 @@ customQtyEl.addEventListener('keydown', e => {
 
 async function updateQty(delta) {
   if (!delta) return;
-  const code = itemCodeEl.value.trim();
-  if (!code) return;
+  const codeRaw = itemCodeEl.value.trim();
+  if (!codeRaw) return;
+  const code = pad13(codeRaw);
+
   const payload = {
-    itemCode: code,
-    brand: brandEl.value,
+    itemCode   : code,
+    brand      : brandEl.value,
     description: descEl.value,
-    price: priceEl.value,
-    delta,
+    price      : priceEl.value,
+    delta
   };
   const res = await fetch(`/api/lists/${listSelect.value}/items`, {
-    method: 'POST',
+    method : 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body   : JSON.stringify(payload)
   });
   if (res.ok) {
     resetForm();
@@ -132,32 +137,32 @@ async function updateQty(delta) {
 
 function resetForm() {
   itemCodeEl.value = '';
-  detailsWrap.style.display = 'none';
   customQtyEl.value = 1;
+  detailsWrap.style.display = 'none';
   itemCodeEl.focus();
 }
 
-// ---------- render list ----------
+/* ---------- render list ---------- */
 async function renderList() {
   if (!listSelect.value) return;
   const res = await fetch(`/api/lists/${listSelect.value}`);
   if (!res.ok) return;
   const list = await res.json();
-  itemsTableBody.innerHTML = '';
+  itemsTable.innerHTML = '';
   let grand = 0;
   Object.values(list.items).forEach(it => {
     const total = it.qty * it.price;
     grand += total;
-    itemsTableBody.insertAdjacentHTML(
+    itemsTable.insertAdjacentHTML(
       'beforeend',
       `<tr>
-        <td data-label="Code">${it.code}</td>
-        <td data-label="Brand">${it.brand}</td>
-        <td data-label="Description">${it.description}</td>
-        <td data-label="Price">${it.price.toFixed(2)}</td>
-        <td data-label="Qty">${it.qty}</td>
-        <td data-label="Total">${total.toFixed(2)}</td>
-      </tr>`,
+         <td data-label="Code">${it.code}</td>
+         <td data-label="Brand">${it.brand}</td>
+         <td data-label="Description">${it.description}</td>
+         <td data-label="Price">${it.price.toFixed(2)}</td>
+         <td data-label="Qty">${it.qty}</td>
+         <td data-label="Total">${total.toFixed(2)}</td>
+       </tr>`
     );
   });
   grandTotalEl.textContent = `Grand Total: $${grand.toFixed(2)}`;
