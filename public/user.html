@@ -6,18 +6,23 @@
   <title>Inventory Counts – User</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
-    /* Desktop: keep original */
+    /* Desktop: use default table layout from styles.css */
     @media (min-width: 601px) {
-      #itemsTable { display: table; width: 100%; }
-      #itemsTable th, #itemsTable td { display: table-cell; }
+      .table-responsive { overflow: visible; }
+      #itemsTable { width: 100%; table-layout: auto; }
     }
-    /* Mobile: make table scrollable and limit rows to last 3 */
+    /* Mobile: horizontal scroll, preserve headers, no block layout */
     @media (max-width: 600px) {
       .table-responsive { overflow-x: auto; }
-      #itemsTable { display: block; width: 100%; }
-      #itemsTable thead { display: none; }
-      #itemsTable tr { display: block; width: auto; margin-bottom: .5rem; }
-      #itemsTable td { display: inline-block; min-width: 80px; padding: .4rem; }
+      #itemsTable {
+        width: max-content;
+        min-width: 100%;
+        border-collapse: collapse;
+      }
+      #itemsTable th, #itemsTable td {
+        white-space: nowrap;
+        padding: 0.5rem;
+      }
     }
   </style>
 </head>
@@ -32,7 +37,10 @@
   <hr />
   <form id="itemForm" autocomplete="off">
     <div class="input-group flex" style="align-items:flex-end;">
-      <div style="flex:1;"><label for="itemCode">Item Code</label><input type="text" id="itemCode" inputmode="numeric" pattern="[0-9]*" required autofocus /></div>
+      <div style="flex:1;">
+        <label for="itemCode">Item Code</label>
+        <input type="text" id="itemCode" inputmode="numeric" pattern="[0-9]*" required />
+      </div>
       <button type="button" id="selectBtn" class="secondary">Select</button>
     </div>
     <div id="detailsWrap" style="display:none;">
@@ -54,7 +62,9 @@
 
   <div class="table-responsive">
     <table id="itemsTable">
-      <thead><tr><th>Code</th><th>Brand</th><th>Description</th><th>Price</th><th>Qty</th><th>Total</th></tr></thead>
+      <thead>
+        <tr><th>Code</th><th>Brand</th><th>Description</th><th>Price</th><th>Qty</th><th>Total</th></tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
@@ -62,18 +72,25 @@
 </main>
 <script src="js/user.js"></script>
 <script>
-  // After rendering list, trim mobile rows
-  const origRender = renderList;
+  // Override renderList to trim to last 3 on mobile
+  const _origRender = renderList;
   renderList = async function() {
-    await origRender();
+    await _origRender();
     if (window.innerWidth <= 600) {
-      const rows = document.querySelectorAll('#itemsTable tbody tr');
-      const keep = Array.from(rows).slice(-3);
       const tb = document.querySelector('#itemsTable tbody');
-      tb.innerHTML = '';
-      keep.forEach(r => tb.appendChild(r));
+      const rows = Array.from(tb.children);
+      if (rows.length > 3) {
+        tb.innerHTML = '';
+        rows.slice(-3).forEach(r => tb.appendChild(r));
+      }
     }
   };
+
+  // Focus on itemCode input on startup
+  window.addEventListener('load', () => {
+    const codeField = document.getElementById('itemCode');
+    if (codeField) codeField.focus();
+  });
 </script>
 </body>
 </html>
