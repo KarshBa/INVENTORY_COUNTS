@@ -105,7 +105,7 @@ async function updateQty(delta) {
   if (!delta) return;
   const raw = itemCodeEl.value.trim();
   if (!raw) return;
-  const code = normalizeUPC(raw);
+  const code = (raw);
 
   const payload = {
     itemCode   : code,
@@ -124,24 +124,21 @@ async function updateQty(delta) {
 }
 
 /**
- * normalizeUPC(raw)
+ * (raw)
  * 1) keep digits only
  * 2) strip leading zeros, remember how many
  * 3) if we now have 13 digits, test “without last digit”
  *    against masterItems; if that exists, drop check digit
  * 4) pad back to 13 with any leading zeros we lost
  */
-function normalizeUPC(raw) {
-  const digits = String(raw).replace(/\\D/g,"");          // keep digits
-  if (!digits) return "";
-
-  let core = digits;
-  // If scanner included check digit (13) but master is 12
-  if (core.length === 12 && !masterItems[core] && masterItems[core.slice(0,11)]) {
-    core = core.slice(0,11);                              // drop check digit
-  }
-  // Pad to 13 with leading zeros
-  return core.padStart(13,"0");
+// Canonicalise UPC → 13-digit (11 significant) string
+function normalizeUPC(raw){
+  let digits = String(raw).replace(/\\D/g,"");
+  if(!digits) return "";
+  const sig = digits.replace(/^0+/,"");        // strip leading zeros
+  // If 12 sig. digits, last one is check digit → drop it
+  let core = sig.length === 12 ? sig.slice(0,-1) : sig;   // → 11 sig. digits
+  return core.padStart(13,"0");                // pad back to 13 with zeros
 }
 
 function resetForm() {
