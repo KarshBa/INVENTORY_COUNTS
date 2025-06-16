@@ -41,17 +41,17 @@ function pick(row, aliases){
 
 // --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
 const normalizeUPC = raw => {
-  let digits = String(raw).replace(/\\D/g, "");   // keep digits only
-  if (!digits) return "";
+  let d = String(raw).replace(/\D/g, "");   // keep digits only
+  if (!d) return "";
 
-  // Strip leading zeros *temporarily* to inspect significant length
-  const sig = digits.replace(/^0+/, "");
+  // 13-digit payload → drop last (check)  → 12 significant
+  if (d.length === 13) d = d.slice(0, 12);
 
-  // If we have 12 significant digits (== check digit present) drop the last one
-  let core = sig.length === 12 ? sig.slice(0, -1) : sig;   // now 11 sig. digits
+  // 12-digit payload → drop last (check)  → 11 significant
+  else if (d.length === 12) d = d.slice(0, 11);
 
-  // Re-pad to full 13 with the original leading zeros
-  return core.padStart(13, "0");
+  // pad to full 13 with leading zeros
+  return d.padStart(13, "0");
 };
 /* ---------------------------------------------------- */
 
