@@ -43,8 +43,8 @@ const normalizeUPC = upc => {
   const digits = String(upc).replace(/\\D/g, "");           // keep digits only
   if (!digits) return "";
   // if 13-digit with check digit but master has 12, drop last digit
-  const core = digits.length === 13 &&
-               masterItems.get(digits.slice(0,12)) ? digits.slice(0,12) : digits;
+  const core = digits.length === 12 &&
+               masterItems.get(digits.slice(0,11)) ? digits.slice(0,11) : digits;
   return core.padStart(13, "0");                            // preserve leading zeros
 };
 /* ---------------------------------------------------- */
