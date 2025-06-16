@@ -123,23 +123,20 @@ async function updateQty(delta) {
   else        { alert('Server error');   }
 }
 
-/**
- * (raw)
- * 1) keep digits only
- * 2) strip leading zeros, remember how many
- * 3) if we now have 13 digits, test “without last digit”
- *    against masterItems; if that exists, drop check digit
- * 4) pad back to 13 with any leading zeros we lost
- */
-// Canonicalise UPC → 13-digit (11 significant) string
-function normalizeUPC(raw){
-  let digits = String(raw).replace(/\\D/g,"");
-  if(!digits) return "";
-  const sig = digits.replace(/^0+/,"");        // strip leading zeros
-  // If 12 sig. digits, last one is check digit → drop it
-  let core = sig.length === 12 ? sig.slice(0,-1) : sig;   // → 11 sig. digits
-  return core.padStart(13,"0");                // pad back to 13 with zeros
-}
+// --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
+const normalizeUPC = raw => {
+  let d = String(raw).replace(/\D/g, "");   // keep digits only
+  if (!d) return "";
+
+  // 13-digit payload → drop last (check)  → 12 significant
+  if (d.length === 13) d = d.slice(0, 12);
+
+  // 12-digit payload → drop last (check)  → 11 significant
+  else if (d.length === 12) d = d.slice(0, 11);
+
+  // pad to full 13 with leading zeros
+  return d.padStart(13, "0");
+};
 
 function resetForm() {
   itemCodeEl.value = '';
