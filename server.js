@@ -39,6 +39,16 @@ function pick(row, aliases){
   return undefined;
 }
 
+const normalizeUPC = upc => {
+  const digits = String(upc).replace(/\\D/g, "");           // keep digits only
+  if (!digits) return "";
+  // if 13-digit with check digit but master has 12, drop last digit
+  const core = digits.length === 13 &&
+               masterItems.get(digits.slice(0,12)) ? digits.slice(0,12) : digits;
+  return core.padStart(13, "0");                            // preserve leading zeros
+};
+/* ---------------------------------------------------- */
+
 let masterItems = new Map();
 try {
   const csv = fs.readFileSync(ITEM_CSV_PATH, "utf8");
@@ -88,7 +98,9 @@ app.get("/api/lists/:name",(req,res)=>{
 });
 
 app.post("/api/lists/:name/items",(req,res)=>{
-  const {itemCode,brand,description,price,delta}=req.body;
+  // pull from body, then canonicalise
+  let { itemCode, brand, description, price, delta } = req.body;
+  itemCode = normalizeUPC(itemCode);            // ← use the helper
   if(!itemCode) return res.status(400).json({error:"Missing code"});
   const lists=loadLists();
   const list=lists[req.params.name];
