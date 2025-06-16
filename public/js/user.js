@@ -65,7 +65,7 @@ selectBtn.addEventListener('click', async () => {
   const raw = itemCodeEl.value.trim();
   if (!raw) return alert('Enter item code');
 
-  const code = pad13(raw);
+  const code = normalizeUPC(raw);
 
   // If not in master, pull any previous user‐entered data from this list
   const r  = await fetch(`/api/lists/${listSelect.value}`);
@@ -105,7 +105,7 @@ async function updateQty(delta) {
   if (!delta) return;
   const raw = itemCodeEl.value.trim();
   if (!raw) return;
-  const code = pad13(raw);
+  const code = normalizeUPC(raw);
 
   const payload = {
     itemCode   : code,
@@ -121,6 +121,27 @@ async function updateQty(delta) {
   });
   if (res.ok) { resetForm(); renderList(); }
   else        { alert('Server error');   }
+}
+
+/**
+ * normalizeUPC(raw)
+ * 1) keep digits only
+ * 2) strip leading zeros, remember how many
+ * 3) if we now have 13 digits, test “without last digit”
+ *    against masterItems; if that exists, drop check digit
+ * 4) pad back to 13 with any leading zeros we lost
+ */
+function normalizeUPC(raw) {
+  const digits = String(raw).replace(/\\D/g,"");          // keep digits
+  if (!digits) return "";
+
+  let core = digits;
+  // If scanner included check digit (13) but master is 12
+  if (core.length === 13 && !masterItems[core] && masterItems[core.slice(0,12)]) {
+    core = core.slice(0,12);                              // drop check digit
+  }
+  // Pad to 13 with leading zeros
+  return core.padStart(13,"0");
 }
 
 function resetForm() {
