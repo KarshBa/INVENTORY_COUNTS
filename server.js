@@ -39,13 +39,19 @@ function pick(row, aliases){
   return undefined;
 }
 
-const normalizeUPC = upc => {
-  const digits = String(upc).replace(/\\D/g, "");           // keep digits only
+// --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
+const normalizeUPC = raw => {
+  let digits = String(raw).replace(/\\D/g, "");   // keep digits only
   if (!digits) return "";
-  // if 13-digit with check digit but master has 12, drop last digit
-  const core = digits.length === 12 &&
-               masterItems.get(digits.slice(0,11)) ? digits.slice(0,11) : digits;
-  return core.padStart(13, "0");                            // preserve leading zeros
+
+  // Strip leading zeros *temporarily* to inspect significant length
+  const sig = digits.replace(/^0+/, "");
+
+  // If we have 12 significant digits (== check digit present) drop the last one
+  let core = sig.length === 12 ? sig.slice(0, -1) : sig;   // now 11 sig. digits
+
+  // Re-pad to full 13 with the original leading zeros
+  return core.padStart(13, "0");
 };
 /* ---------------------------------------------------- */
 
