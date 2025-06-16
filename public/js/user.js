@@ -137,8 +137,8 @@ function normalizeUPC(raw) {
 
   let core = digits;
   // If scanner included check digit (13) but master is 12
-  if (core.length === 13 && !masterItems[core] && masterItems[core.slice(0,12)]) {
-    core = core.slice(0,12);                              // drop check digit
+  if (core.length === 12 && !masterItems[core] && masterItems[core.slice(0,11)]) {
+    core = core.slice(0,11);                              // drop check digit
   }
   // Pad to 13 with leading zeros
   return core.padStart(13,"0");
