@@ -168,7 +168,7 @@ app.get("/api/export/:name", (req, res) => {
     ]);
   });
 
-  rows.push(["","","","","Grand",grand]);
+  rows.push(["","","","","","List Total",grand]);
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", `attachment; filename=${req.params.name}.csv`);
