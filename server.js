@@ -179,9 +179,12 @@ app.get("/api/exportall", (_, res) => {
   const lists = loadLists();
   // Include Sub-department in the header
   const rows = [["List","Item Code","Brand","Sub-department","Description","Price","Qty","Total"]];
-
+  let grand = 0;
+  
   Object.entries(lists).forEach(([listName, list]) => {
     Object.values(list.items).forEach(it => {
+      const t = it.qty * it.price;
+      grand += t;
       const subdept = masterItems.get(it.code)?.subdept || "";
       rows.push([
         listName,
