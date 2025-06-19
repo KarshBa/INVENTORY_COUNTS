@@ -91,9 +91,14 @@ function prepareDetails(code) {
 
 /* ---------- quantity updates ---------- */
 document.querySelectorAll('button[data-delta]')
-  .forEach(btn => btn.addEventListener('click', () =>
-    updateQty(parseInt(btn.dataset.delta,10))
-  ));
+  .forEach(btn =>
+    btn.addEventListener('click', () => {
+      // just bump the qty field – don’t submit yet
+      const delta = parseInt(btn.dataset.delta, 10);
+      const curr  = parseInt(customQtyEl.value, 10) || 0;
+      customQtyEl.value = curr + delta;
+    })
+  );
 enterBtn.addEventListener('click', () =>
   updateQty(parseInt(customQtyEl.value,10))
 );
