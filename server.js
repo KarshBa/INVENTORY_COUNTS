@@ -199,7 +199,7 @@ app.get("/api/exportall", (_, res) => {
     });
   });
   
-  rows.push(["","","","","","List Total",grand]);
+  rows.push(["","","","","","","List Total",grand]);
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", "attachment; filename=all_lists.csv");
