@@ -30,6 +30,11 @@
     }
     /* Common styles for both tables */
     .table-responsive { overflow-x: auto; }
+    /* make -1 and -5 buttons red */
+button[data-delta="-1"],
+button[data-delta="-5"] {
+  background: var(--danger);   /* uses the red you already defined in styles.css */
+}
   </style>
 </head>
 <body>
