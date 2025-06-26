@@ -194,7 +194,7 @@ if(!itemCode) return res.status(400).json({error:"Missing code"});
 
   const master = masterItems.get(itemCode);
   let entry = list.items[key] || {
-    code: key,
+    code: itemCode,
     brand: master?.brand || brand || "",
     description: master?.description || description || "",
     price: (price !== undefined && price !== "" )
