@@ -17,7 +17,7 @@ const grandTotalEl = document.getElementById('grandTotal');
 
 let masterItems = {};
 const pad13 = c => c.padStart(13,'0');   // “1” → “0000000000001”
-
+let currentCode = null;
 /* ---------- initial ---------- */
 (async () => {
   await loadMaster();
@@ -65,18 +65,24 @@ selectBtn.addEventListener('click', async () => {
   const raw = itemCodeEl.value.trim();
   if (!raw) return alert('Enter item code');
 
-  const code = normalizeUPC(raw);
-  
-  /* ————— Ask the back-end to decode the raw scan ————— */
-  if (!masterItems[code]) {                       // nothing in master yet?
+  // always start with the freshly-scanned code
+  let code = normalizeUPC(raw);
+
+  /* ——— ask the back-end only if we don’t already know this code ——— */
+  if (!masterItems[code]) {
     const hit = await fetch(`/api/item/${raw}`).then(r => r.json());
-    if (hit.code) masterItems[code] = hit;        // cache for next scan
+    if (hit.code) {
+      masterItems[hit.code] = hit;   // cache for later scans
+      code = hit.code;               // switch to canonical catalogue key
+    }
   }
-  
-  prepareDetails(code);
+
+  currentCode = code;                // remember for quantity updates
+  prepareDetails(code);              // fill Brand / Desc / Price
   detailsWrap.style.display = 'block';
   customQtyEl.focus();
 });
+
 itemCodeEl.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); selectBtn.click(); }
 });
@@ -110,7 +116,7 @@ async function updateQty(delta) {
   if (!delta) return;
   const raw = itemCodeEl.value.trim();
   if (!raw) return;
-  const code = normalizeUPC(raw);
+  const code = currentCode || normalizeUPC(raw);
 
   const payload = {
     itemCode   : code,
@@ -133,7 +139,13 @@ const normalizeUPC = raw => {
   let d = String(raw).replace(/\D/g, "");
   if (!d) return "";
 
-  // UPC-A (12 digits) – strip the check-digit
+  // Variable-weight scale label with stripped check digit (11 digits)
+  if (d.length === 11 && d[0] === "2") {
+    // canonical catalogue code: 00 + first-7 + 0000
+    return ("00" + d.slice(0, 7) + "0000").padStart(13, "0");
+  }
+
+  // UPC-A (12 digits) – strip the check digit
   if (d.length === 12) d = d.slice(0, 11);
 
   // EAN-13 and everything else: **keep all 13 digits**
