@@ -53,7 +53,30 @@ const normalizeUPC = raw => {
   // pad to full 13 with leading zeros
   return d.padStart(13, "0");
 };
-/* ---------------------------------------------------- */
+
+/* ---------- variable-weight (scale-label) decoder -------------
+ * A 12-digit UPC-A that starts with “2”:
+ *    2 + 5-digit PLU + 5-digit price/weight + check-digit
+ * Example: 270880507071 → PLU 70880  price $7.07
+ *
+ * We turn the first 7 (or 6) digits into the 13-digit
+ * “catalogue” code used in item_list.csv:
+ *     00 + <7-digits> + 0000   → 13 digits
+ * --------------------------------------------------------------*/
+const decodeScale = upc => {
+  if (!/^\d{12}$/.test(upc) || upc[0] !== '2') return null;    // not a scale label
+
+  const body   = upc.slice(0, -1);                   // drop check-digit
+  const cents  = parseInt(body.slice(7, 11), 10);    // last-4 payload → price
+  const price  = cents / 100;
+
+  const cat = p => ('00' + p).padEnd(13, '0');       // helper → 13-digit code
+  return {
+    price,
+    catCodes: [ cat(body.slice(0, 7)),               // 7-digit PLU variant
+                cat(body.slice(0, 6)) ]              // 6-digit PLU variant
+  };
+};
 
 let masterItems = new Map();
 try {
@@ -106,8 +129,19 @@ app.get("/api/lists/:name",(req,res)=>{
 app.post("/api/lists/:name/items",(req,res)=>{
   // pull from body, then canonicalise
   let { itemCode, brand, description, price, delta } = req.body;
-  itemCode = normalizeUPC(itemCode);            // ← use the helper
-  if(!itemCode) return res.status(400).json({error:"Missing code"});
+const raw = String(itemCode||'').replace(/\D/g,'');
+
+let scale = decodeScale(raw);                 // 🆕 check for scale label
+if (scale) {
+  // pick the catalogue code that actually exists in masterItems,
+  // otherwise fall back to the first (7-digit) candidate
+  itemCode = scale.catCodes.find(c => masterItems.has(c)) || scale.catCodes[0];
+  price    = scale.price;                     // price comes from the label!
+} else {
+  itemCode = normalizeUPC(raw);               // normal barcode path
+}
+
+if(!itemCode) return res.status(400).json({error:"Missing code"});
   const lists=loadLists();
   const list=lists[req.params.name];
   if(!list) return res.status(404).json({error:"List missing"});
