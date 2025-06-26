@@ -108,6 +108,28 @@ app.use(express.static(path.join(__dirname,"public")));
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
 
+// ────────────────────────────────────────────────────────────────
+// 1) NEW SINGLE-ITEM LOOK-UP  (drop it right after `app.get("/api/items" …)`
+// ────────────────────────────────────────────────────────────────
+app.get("/api/item/:code", (req, res) => {
+  const raw   = String(req.params.code||"").replace(/\D/g,"");
+  // ➊ normal catalogue code ------------------------------------
+  let code13  = normalizeUPC(raw);
+  let hit     = masterItems.get(code13);
+
+  // ➋ variable-weight (scale) label ----------------------------
+  if(!hit){
+    const s = decodeScale(raw);
+    if(s){
+      const cat  = s.catCodes.find(c => masterItems.has(c));
+      hit = cat ? { ...masterItems.get(cat), price: s.price }
+                : { code: s.catCodes[0],    price: s.price };   // fallback
+    }
+  }
+
+  res.json(hit || {});        // {} = “not found”
+});
+
 app.get("/api/lists",(_,res)=>res.json(loadLists()));
 
 app.post("/api/lists",(req,res)=>{
@@ -153,10 +175,11 @@ if(!itemCode) return res.status(400).json({error:"Missing code"});
     price:master?master.price:parseFloat(price||0),
     qty:0
   };
-  if(master){
-    entry.brand=master.brand;
-    entry.description=master.description;
-    entry.price=master.price;
+    if(master){
+    entry.brand = master.brand;
+    entry.description = master.description;
+    // keep sticker price for scale labels – only overwrite when none sent
+    if(price===undefined || price==="") entry.price = master.price;
   }else{
     if(brand&&brand.trim()) entry.brand=brand.trim();
     if(description&&description.trim()) entry.description=description.trim();
