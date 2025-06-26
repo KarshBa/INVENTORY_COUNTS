@@ -114,12 +114,11 @@ customQtyEl.addEventListener('keydown', e => {
 
 async function updateQty(delta) {
   if (!delta) return;
-  const raw = itemCodeEl.value.trim();
+  const raw = itemCodeEl.value.trim().replace(/\D/g, ""); // raw digits
   if (!raw) return;
-  const code = currentCode || normalizeUPC(raw);
 
   const payload = {
-    itemCode   : code,
+    itemCode   : raw,
     brand      : brandEl.value,
     description: descEl.value,
     price      : priceEl.value,
@@ -153,6 +152,7 @@ const normalizeUPC = raw => {
 };
 
 function resetForm() {
+  currentCode = null;
   itemCodeEl.value = '';
   customQtyEl.value = 1;
   detailsWrap.style.display = 'none';
