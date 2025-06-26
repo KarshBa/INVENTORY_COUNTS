@@ -66,13 +66,13 @@ selectBtn.addEventListener('click', async () => {
   if (!raw) return alert('Enter item code');
 
   const code = normalizeUPC(raw);
-
-  // If not in master, pull any previous user‐entered data from this list
-  const r  = await fetch(`/api/lists/${listSelect.value}`);
-  const ls = await r.json();
-  if (!masterItems[code] && ls.items[code])
-    masterItems[code] = ls.items[code];
-
+  
+  /* ————— Ask the back-end to decode the raw scan ————— */
+  if (!masterItems[code]) {                       // nothing in master yet?
+    const hit = await fetch(`/api/item/${raw}`).then(r => r.json());
+    if (hit.code) masterItems[code] = hit;        // cache for next scan
+  }
+  
   prepareDetails(code);
   detailsWrap.style.display = 'block';
   customQtyEl.focus();
@@ -110,7 +110,7 @@ async function updateQty(delta) {
   if (!delta) return;
   const raw = itemCodeEl.value.trim();
   if (!raw) return;
-  const code = (raw);
+  const code = normalizeUPC(raw);
 
   const payload = {
     itemCode   : code,
@@ -130,16 +130,13 @@ async function updateQty(delta) {
 
 // --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
 const normalizeUPC = raw => {
-  let d = String(raw).replace(/\D/g, "");   // keep digits only
+  let d = String(raw).replace(/\D/g, "");
   if (!d) return "";
 
-  // 13-digit payload → drop last (check)  → 12 significant
-  if (d.length === 13) d = d.slice(0, 12);
+  // UPC-A (12 digits) – strip the check-digit
+  if (d.length === 12) d = d.slice(0, 11);
 
-  // 12-digit payload → drop last (check)  → 11 significant
-  else if (d.length === 12) d = d.slice(0, 11);
-
-  // pad to full 13 with leading zeros
+  // EAN-13 and everything else: **keep all 13 digits**
   return d.padStart(13, "0");
 };
 
