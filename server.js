@@ -55,26 +55,34 @@ const normalizeUPC = raw => {
 };
 
 /* ---------- variable-weight (scale-label) decoder -------------
- * A 12-digit UPC-A that starts with “2”:
- *    2 + 5-digit PLU + 5-digit price/weight + check-digit
- * Example: 270880507071 → PLU 70880  price $7.07
+ * Accepts **both** 11-digit (check-digit already stripped by the scanner)
+ * and 12-digit UPC-A labels that begin with “2”.
  *
- * We turn the first 7 (or 6) digits into the 13-digit
- * “catalogue” code used in item_list.csv:
- *     00 + <7-digits> + 0000   → 13 digits
+ * Format  (payload = upc minus optional check digit)
+ *   2 + 5-digit PLU + 5-digit price/weight
+ *   e.g. 27088050707      → PLU 70880,  price 7.07
+ *         270880507071    → same, with check digit ‘1’ on the end
+ *
+ * The first 7 (or 6) digits become an EAN-13 “catalogue” code:
+ *     00 + <7-digits> + 0000   → 13 digits  (used in item_list.csv)
  * --------------------------------------------------------------*/
 const decodeScale = upc => {
-  if (!/^\d{12}$/.test(upc) || upc[0] !== '2') return null;    // not a scale label
+  // must be 11 **or** 12 digits and start with “2”
+  if (!/^\d{11,12}$/.test(upc) || upc[0] !== '2') return null;
 
-  const body   = upc.slice(0, -1);                   // drop check-digit
-  const cents  = parseInt(body.slice(7, 11), 10);    // last-4 payload → price
-  const price  = cents / 100;
+  // 12-digit label → throw away check digit; 11-digit is already stripped
+  const payload = upc.length === 12 ? upc.slice(0, -1) : upc;
 
-  const cat = p => ('00' + p).padEnd(13, '0');       // helper → 13-digit code
+  const cents = parseInt(payload.slice(7, 11), 10);   // last-4 → price/100
+  const price = cents / 100;
+
+  const cat = p => ('00' + p).padEnd(13, '0');        // helper → 13-digit code
   return {
     price,
-    catCodes: [ cat(body.slice(0, 7)),               // 7-digit PLU variant
-                cat(body.slice(0, 6)) ]              // 6-digit PLU variant
+    catCodes: [
+      cat(payload.slice(0, 7)),   // 7-digit PLU variant  (preferred)
+      cat(payload.slice(0, 6))    // 6-digit PLU variant  (fallback)
+    ]
   };
 };
 
