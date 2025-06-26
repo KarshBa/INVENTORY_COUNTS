@@ -39,18 +39,24 @@ function pick(row, aliases){
   return undefined;
 }
 
-// --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
+// --- helper: canonicalise any scanner payload ----------------------------
+//  • EAN-13 / internal catalogue → keep all 13 digits
+//  • UPC-A  (12 digits)          → drop *only* the check digit
+//  • Scale label stripped (11 d) → 00 + PLU + 0000  → 13 digits
+// -------------------------------------------------------------------------
 const normalizeUPC = raw => {
-  let d = String(raw).replace(/\D/g, "");   // keep digits only
+  let d = String(raw).replace(/\D/g, "");
   if (!d) return "";
 
-  // 13-digit payload → drop last (check)  → 12 significant
-  if (d.length === 13) d = d.slice(0, 12);
+  // 11-digit variable-weight (scanner already removed check digit)
+  if (d.length === 11 && d[0] === "2") {
+    return ("00" + d.slice(0, 7) + "0000").padStart(13, "0");
+  }
 
-  // 12-digit payload → drop last (check)  → 11 significant
-  else if (d.length === 12) d = d.slice(0, 11);
+  // UPC-A 12 digits → remove *one* check digit → 11 significant
+  if (d.length === 12) d = d.slice(0, 11);
 
-  // pad to full 13 with leading zeros
+  // everything else (already 13 digits) → leave intact
   return d.padStart(13, "0");
 };
 
@@ -175,14 +181,27 @@ if(!itemCode) return res.status(400).json({error:"Missing code"});
   const lists=loadLists();
   const list=lists[req.params.name];
   if(!list) return res.status(404).json({error:"List missing"});
-  const master=masterItems.get(itemCode);
-  let entry=list.items[itemCode]||{
-    code:itemCode,
-    brand:master?.brand||brand||"",
-    description:master?.description||description||"",
-    price:master?master.price:parseFloat(price||0),
-    qty:0
-  };
+  // ------------------------------------------------------------------
+  //  VARIABLE-WEIGHT ITEMS: make *every sticker* its own row so each
+  //  keeps its price.  We add price-cents + a time-stamp to the key.
+  // ------------------------------------------------------------------
+  const isScale = !!scale;                      // after the call above
+  let   key     = itemCode;                     // default merge key
+  if (isScale) {
+    const cents = Math.round(parseFloat(price) * 100);
+    key = `${itemCode}-${String(cents).padStart(4,"0")}-${Date.now().toString(36)}`;
+  }
+
+  const master = masterItems.get(itemCode);
+  let entry = list.items[key] || {
+    code: key,
+    brand: master?.brand || brand || "",
+    description: master?.description || description || "",
+    price: (price !== undefined && price !== "" )
+             ? parseFloat(price)            // <-- keep sticker price when given
+             : (master ? master.price : 0),
+    qty: 0
+};
     if(master){
     entry.brand = master.brand;
     entry.description = master.description;
@@ -194,8 +213,8 @@ if(!itemCode) return res.status(400).json({error:"Missing code"});
     if(price!==undefined&&price!=="") entry.price=parseFloat(price);
   }
   entry.qty += parseFloat(delta)||0;
-  if(entry.qty===0) delete list.items[itemCode];
-  else list.items[itemCode]=entry;
+  if(entry.qty===0) delete list.items[key];
+  else list.items[key]=entry;
   saveLists(lists);
   res.json({message:"updated",item:entry});
 });
@@ -210,6 +229,7 @@ app.delete("/api/lists/:name",(req,res)=>{
 app.delete("/api/lists",(_,res)=>{saveLists({});res.json({message:"all cleared"});});
 
 app.get("/api/export/:name", (req, res) => {
+  const base = c => c.split('-')[0];
   const list = loadLists()[req.params.name];
   if (!list) return res.status(404).json({ error: "List not found" });
 
@@ -221,7 +241,7 @@ app.get("/api/export/:name", (req, res) => {
     const t = it.qty * it.price;
     grand += t;
     // Look up subdept from masterItems (loaded from CSV column AS)
-    const subdept = masterItems.get(it.code)?.subdept || "";
+    const subdept = masterItems.get(base(it.code))?.subdept || "";
     rows.push([
       it.code,
       it.brand,
@@ -241,6 +261,7 @@ app.get("/api/export/:name", (req, res) => {
 });
 
 app.get("/api/exportall", (_, res) => {
+  const base = c => c.split('-')[0];
   const lists = loadLists();
   // Include Sub-department in the header
   const rows = [["List","Item Code","Brand","Sub-department","Description","Price","Qty","Total"]];
@@ -250,7 +271,7 @@ app.get("/api/exportall", (_, res) => {
     Object.values(list.items).forEach(it => {
       const t = it.qty * it.price;
       grand += t;
-      const subdept = masterItems.get(it.code)?.subdept || "";
+      const subdept = masterItems.get(base(it.code))?.subdept || "";
       rows.push([
         listName,
         it.code,
