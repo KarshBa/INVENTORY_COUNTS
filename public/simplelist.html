@@ -63,11 +63,18 @@
   <button id="createBtn">Create List</button>
 
   <!-- RIGHT side  (auto-pushes to far right) -------------------->
-  <div style="margin-left:auto;display:flex;gap:.5rem;">
-    <button id="exportBtn">Export</button>
-    <button id="exportAllBtn">Export ALL</button>
-    <button id="delListBtn" class="danger">Delete</button>
-  </div>
+  <div
+  style="
+    margin-left:auto;
+    display:flex;
+    gap:.5rem;
+   flex-wrap:nowrap;          /* <- NEW: keep on one line   */
+   overflow-x:auto;           /*    scroll if still too wide */
+  ">
+  <button id="exportBtn">Export</button>
+  <button id="exportAllBtn">Export ALL</button>
+  <button id="delListBtn" class="danger">Delete</button>
+</div>
 </div>
 
     <!-- scanner + feedback -->
@@ -91,14 +98,7 @@
         <tbody></tbody>
       </table>
     </div>
-
-    <!-- export / delete controls – one row, right-aligned -->
-<!--<div class="card flex" style="gap:.5rem;justify-content:flex-end;">
-  <button id="exportBtn">Export</button>
-  <button id="exportAllBtn">Export ALL</button>
-  <button id="delListBtn" class="danger">Delete</button>
-</div>-->
-
+    
   <script type="module" src="/js/simplelist.js"></script>
 </main>
 </body>
