@@ -36,16 +36,34 @@ createBtn.onclick = async () => {
 listSel.onchange = () => { current=listSel.value; render(); };
 
 scanIn.onkeydown = async e => {
-  if(e.key!=='Enter') return;
+  if (e.key !== 'Enter') return;
   const code = normalizeUPC(scanIn.value);
-  scanIn.value='';
-  if(!code) return;
+  scanIn.value = '';
+  if (!code) return;
+
   const exists = master[code];
-  if(!exists){ warnMsg.classList.remove('hidden'); return; }
-  warnMsg.classList.add('hidden');
-  await fetch(`/api/slists/${encodeURIComponent(current)}/items`,{
-    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
-  render();
+
+  if (!exists) {
+    // hide the warning – we’ll store the row instead
+    warnMsg.classList.add('hidden');
+
+    // add row with fallback description
+    await fetch(`/api/slists/${encodeURIComponent(current)}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, description: 'Item does not exist' })
+    });
+  } else {
+    // known item – normal path
+    warnMsg.classList.add('hidden');
+    await fetch(`/api/slists/${encodeURIComponent(current)}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+  }
+
+  render();          // refresh the table either way
 };
 
 delListBtn.onclick = async ()=>{
