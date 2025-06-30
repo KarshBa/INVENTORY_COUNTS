@@ -8,6 +8,12 @@
   </head>
   <style>
   /* ===== mobile tweaks – imitate user.html ===== */
+  @media (min-width:601px){
+    .container{          /* the <main class="container"> wrapper */
+      max-width:1000px;  /* ⬅️ cap width */
+      margin:0 auto;     /* centre it */
+    }
+  }
   /* desktop: keep full table */
   @media (min-width:601px){
     #shrink-table thead th,
