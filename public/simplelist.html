@@ -55,9 +55,8 @@
 </header>
   <!-- keep everything else inside the container -->
   <main class="container">
-    <!-- list selector / creator + actions in one row -->
-<div class="card nowrap-row">
-  <!-- LEFT side -------------------------------------------------->
+<!-- ▸▸ 1  FIRST ROW – the two input fields ◂◂ -->
+<div class="card flex" style="gap:.5rem;flex-wrap:wrap;align-items:flex-end;">
   <div style="flex:1;min-width:190px">
     <label for="listSelect">Choose list</label>
     <select id="listSelect"></select>
@@ -67,18 +66,16 @@
     <label for="newList">List name</label>
     <input type="text" id="newList" placeholder="New list name">
   </div>
-
-  <button id="createBtn">Create List</button>
-
-  <!-- RIGHT side  (auto-pushes to far right) -------------------->
-    <!-- right-hand buttons -->
-  <div style="margin-left:auto;display:flex;gap:.5rem;">
-    <button id="exportBtn">Export</button>
-    <button id="exportAllBtn">Export&nbsp;ALL</button>
-    <button id="delListBtn" class="danger">Delete</button>
-  </div>
 </div>
 
+<!-- ▸▸ 2  SECOND ROW – the four action buttons ◂◂ -->
+<div class="card button-bar">
+  <button id="createBtn">Create&nbsp;List</button>
+  <button id="exportBtn">Export</button>
+  <button id="exportAllBtn">Export&nbsp;ALL</button>
+  <button id="delListBtn" class="danger">Delete</button>
+</div>
+    
     <!-- scanner + feedback -->
     <div class="card">
       <label for="scan">Item Code</label>
