@@ -69,16 +69,19 @@ tbody.onclick = async e => {
 async function render(){
   if(!current) { tbody.innerHTML=''; return; }
   const list = await (await fetch(`/api/slists/${encodeURIComponent(current)}`)).json();
-  const rows = Object.values(list.items);
-  // mobile: keep last 10 rows
-  const trimmed = window.innerWidth<=600 ? rows.slice(-10) : rows;
-  tbody.innerHTML = trimmed.map(it=>`<tr data-code="${it.code}">
-     <td class="code">${it.code}</td>
-     <td class="brand">${it.brand}</td>
-     <td class="description">${it.description}</td>
-     <td>${it.subdept||''}</td>
-     <td class="del-col"><button class="del">✕</button></td>
-  </tr>`).join('');
+  /* keep BOTH object-key and value so we can delete the right entry */
+  const entries = Object.entries(list.items);      // [key, item]
+
+  /* mobile – show only last 10 */
+  const display = window.innerWidth<=600 ? entries.slice(-10) : entries;
+  tbody.innerHTML = display.map(([key,it])=>`
+    <tr data-code="${key}">
+      <td class="code">${it.code}</td>
+      <td class="brand">${it.brand}</td>
+      <td class="description">${it.description}</td>
+      <td>${it.subdept||''}</td>
+      <td class="del-col"><button class="del" data-code="${key}">✕</button></td>
+    </tr>`).join('');
 }
 
 function normalizeUPC(raw){
