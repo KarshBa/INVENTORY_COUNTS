@@ -358,7 +358,7 @@ app.get("/api/export/:name", (req, res) => {
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", `attachment; filename=${req.params.name}.csv`);
-  res.send(rows.map(r => r.join(",")).join("\n"));
+  res.send(rows.map(r => r.join(",")).join("\r\n"));
 });
 
 app.get("/api/exportall", (_, res) => {
@@ -390,7 +390,7 @@ app.get("/api/exportall", (_, res) => {
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", "attachment; filename=all_lists.csv");
-  res.send(rows.map(r => r.join(",")).join("\n"));
+  res.send(rows.map(r => r.join(",")).join("\r\n"));
 });
 
 /******************** start ********************/
