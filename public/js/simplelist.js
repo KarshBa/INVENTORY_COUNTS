@@ -54,7 +54,7 @@ scanIn.onkeydown = async e => {
     : {
         code,
         brand: '',
-        desc: 'Item does not exist',          // ✅ what the server keeps
+        desc: '',          // ✅ what the server keeps
       };
 
   // POST to /api/slists/<current>/items
