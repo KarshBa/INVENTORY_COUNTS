@@ -80,7 +80,7 @@ async function render(){
       <td class="brand">${it.brand}</td>
       <td class="description">${it.description}</td>
       <td>${it.subdept||''}</td>
-      <td class="del-col"><button class="del" data-code="${key}">✕</button></td>
+      <td class="del-col"><button class="del" data-code="${key}">🗑️</button></td>
     </tr>`).join('');
 }
 
