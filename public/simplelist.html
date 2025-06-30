@@ -31,23 +31,44 @@
       white-space:nowrap;
     }
   }
+    /* --- make every trash-can button red --- */
+    button.del{
+      background: var(--danger);   /* #d93025 from styles.css */
+      color:#fff;
+    }
+    button.del:hover{ background:#b72018; }
+    button.danger{background:var(--danger);}
+    button.danger:hover{background:#b72018;}
 </style>
 <body>
   <!-- ⭐ NEW header bar – full-width, centred text ⭐ -->
-  <header style="background:#c8f0d5;padding:1rem;text-align:center;">
-    <h1 style="margin:0;">Lists</h1>
-  </header>
+<header style="background:#8ad4b2;padding:1rem;text-align:center;">
+  <h1 style="margin:0;">Lists</h1>
+</header>
   <!-- keep everything else inside the container -->
   <main class="container">
-    <!-- list selector / creator -->
-    <div class="card">
-      <label for="listSelect">Choose list</label>
-      <select id="listSelect"></select>
+    <!-- list selector / creator + actions in one row -->
+<div class="card flex" style="gap:.5rem;flex-wrap:wrap;align-items:flex-end;">
+  <!-- LEFT side -------------------------------------------------->
+  <div style="flex:1;min-width:190px">
+    <label for="listSelect">Choose list</label>
+    <select id="listSelect"></select>
+  </div>
 
-      <label for="newList">List Name</label>
-      <input type="text" id="newList" placeholder="Enter name & press +"/>
-      <button id="createBtn">Create List</button>
-    </div>
+  <div style="flex:1;min-width:190px">
+    <label for="newList">List name</label>
+    <input type="text" id="newList" placeholder="Enter name & press +">
+  </div>
+
+  <button id="createBtn">Create List</button>
+
+  <!-- RIGHT side  (auto-pushes to far right) -------------------->
+  <div style="margin-left:auto;display:flex;gap:.5rem;">
+    <button id="exportBtn">Export</button>
+    <button id="exportAllBtn">Export ALL</button>
+    <button id="delListBtn" class="danger">Delete</button>
+  </div>
+</div>
 
     <!-- scanner + feedback -->
     <div class="card">
@@ -76,7 +97,6 @@
       <hr/>
       <button id="exportAllBtn" style="background:#005fa3;">Export ALL Lists</button>
     </div>
-  </div>
 
   <script type="module" src="/js/simplelist.js"></script>
 </main>
