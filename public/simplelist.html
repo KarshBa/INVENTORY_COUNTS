@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simple Item Lists</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <div class="container">
+    <h1>Simple Lists</h1>
+
+    <!-- list selector / creator -->
+    <div class="card">
+      <label for="listSelect">Choose list</label>
+      <select id="listSelect"></select>
+
+      <label for="newList">New list name</label>
+      <input type="text" id="newList" placeholder="Enter name & press +"/>
+      <button id="createBtn">Create / Switch</button>
+    </div>
+
+    <!-- scanner + feedback -->
+    <div class="card">
+      <label for="scan">Item code</label>
+      <input type="text" id="scan" inputmode="numeric" autofocus/>
+      <p id="warn" class="hidden" style="color:#cc0000;font-weight:bold;">Item does not exist</p>
+    </div>
+
+    <!-- list table -->
+    <div class="card" style="overflow-x:auto;">
+      <table id="shrink-table" width="100%">
+        <thead>
+          <tr>
+            <th>Item Code</th><th>Brand</th><th class="description">Description</th>
+            <th>Sub‑Dept</th><th class="del-col">✕</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- export / delete controls -->
+    <div class="card">
+      <button id="exportBtn">Export this list</button>
+      <button id="delListBtn" style="background:#cc0000;margin-top:.5rem;">Delete this list</button>
+      <hr/>
+      <button id="exportAllBtn" style="background:#005fa3;">Export ALL lists</button>
+    </div>
+  </div>
+
+  <script type="module" src="/js/simplelist.js"></script>
+</body>
+</html>
