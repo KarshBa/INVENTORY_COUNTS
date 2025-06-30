@@ -4,7 +4,6 @@ const listSel   = $('#listSelect');
 const newList   = $('#newList');
 const createBtn = $('#createBtn');
 const scanIn    = $('#scan');
-const warnMsg   = $('#warn');
 const tbody     = $('#shrink-table tbody');
 const exportBtn = $('#exportBtn');
 const exportAll = $('#exportAllBtn');
@@ -37,33 +36,35 @@ listSel.onchange = () => { current=listSel.value; render(); };
 
 scanIn.onkeydown = async e => {
   if (e.key !== 'Enter') return;
+
   const code = normalizeUPC(scanIn.value);
-  scanIn.value = '';
-  if (!code) return;
+  scanIn.value = '';                    // clear the box
+  if (!code) return;                    // ignore empty scans
 
-  const exists = master[code];
+  // is this UPC in the master catalogue?
+  const known = !!master[code];
 
-  if (!exists) {
-    // hide the warning – we’ll store the row instead
-    warnMsg.classList.add('hidden');
+  /* -------------------------------------------
+     Build the payload we send to the server
+     – known items → just the code
+     – unknown     → code plus a fallback description
+  --------------------------------------------*/
+  const payload = known
+    ? { code }
+    : {
+        code,
+        brand: '',
+        desc: 'Item does not exist',          // ✅ what the server keeps
+      };
 
-    // add row with fallback description
-    await fetch(`/api/slists/${encodeURIComponent(current)}/items`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, description: 'Item does not exist' })
-    });
-  } else {
-    // known item – normal path
-    warnMsg.classList.add('hidden');
-    await fetch(`/api/slists/${encodeURIComponent(current)}/items`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
-    });
-  }
+  // POST to /api/slists/<current>/items
+  await fetch(`/api/slists/${encodeURIComponent(current)}/items`, {
+    method : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body   : JSON.stringify(payload)
+  });
 
-  render();          // refresh the table either way
+  render();                             // refresh the table
 };
 
 delListBtn.onclick = async ()=>{
@@ -96,7 +97,7 @@ async function render(){
     <tr data-code="${key}">
       <td class="code">${it.code}</td>
       <td class="brand">${it.brand}</td>
-      <td class="description">${it.description}</td>
+      <td class="description">${it.description ?? it.desc ?? ''}</td>
       <td>${it.subdept||''}</td>
       <td class="del-col"><button class="del" data-code="${key}">🗑️</button></td>
     </tr>`).join('');
