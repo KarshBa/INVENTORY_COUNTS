@@ -208,10 +208,16 @@ function delList(type, req, res){
 function exportOne(type, req, res){
   const list = loadLists(type)[req.params.name];
   if(!list) return res.status(404).json({error:"Not found"});
-  const rows=[["Item Code","Brand","Description","Sub-Dept"]];
+  const rows=[["Item Code","Brand","Description","Price","Sub-Dept"]];  
   Object.values(list.items).forEach(it=>{
     const m = masterItems.get(it.code)||it;
-    rows.push([it.code,m.brand,m.description,m.subdept||""]);
+    rows.push([
+       it.code,
+       m.brand,
+       m.description,
+       m.price ?? "",        // empty if unknown
+       m.subdept || ""
+     ]);
   });
   res.setHeader("Content-Type","text/csv");
   res.setHeader("Content-Disposition",`attachment; filename=${req.params.name}.csv`);
@@ -220,11 +226,18 @@ function exportOne(type, req, res){
 
 function exportAll(type, res){
   const lists=loadLists(type);
-  const rows=[["List","Item Code","Brand","Description","Sub-Dept"]];
+  const rows=[["List","Item Code","Brand","Description","Price","Sub-Dept"]];
   Object.entries(lists).forEach(([n,l])=>{
     Object.values(l.items).forEach(it=>{
       const m = masterItems.get(it.code)||it;
-      rows.push([n,it.code,m.brand,m.description,m.subdept||""]);
+      rows.push([
+         n,
+         it.code,
+         m.brand,
+         m.description,
+         m.price ?? "",
+         m.subdept || ""
+       ]);
     });
   });
   res.setHeader("Content-Type","text/csv");
