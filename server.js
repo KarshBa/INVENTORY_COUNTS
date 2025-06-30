@@ -21,6 +21,9 @@ const ITEM_CSV_PATH = path.join(__dirname, "item_list.csv");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(LISTS_FILE)) fs.writeFileSync(LISTS_FILE, "{}", "utf8");
 
+const SIMPLE_FILE = path.join(DATA_DIR, "simple_lists.json");
+if (!fs.existsSync(SIMPLE_FILE)) fs.writeFileSync(SIMPLE_FILE,"{}", "utf8");
+
 /***************  load master item list  ***************/
 // normalise headers from your CSV export
 const clean = s => String(s||"").replace(/\"/g, "").trim().toLowerCase();
@@ -111,8 +114,13 @@ try {
 }catch(err){ console.error("CSV load failed",err); }
 
 /***************** helpers for lists ******************/
-const loadLists = () => JSON.parse(fs.readFileSync(LISTS_FILE,"utf8"));
-const saveLists = obj => fs.writeFileSync(LISTS_FILE,JSON.stringify(obj,null,2));
+const fileFor = type => type==="slists" ? SIMPLE_FILE : LISTS_FILE;
+
+const loadLists = (type="lists") =>
+  JSON.parse(fs.readFileSync(fileFor(type),"utf8"));
+
+const saveLists = (obj,type="lists") =>
+  fs.writeFileSync(fileFor(type), JSON.stringify(obj,null,2));
 
 /********************* Express ***********************/
 const app = express();
@@ -121,6 +129,16 @@ app.use(express.static(path.join(__dirname,"public")));
 
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
+
+/* ---------- simple-lists (“slists”) ---------- */
+app.get('/api/slists',            (_,res)=>res.json(loadLists('slists')));
+app.post('/api/slists',           (req,res)=>addList('slists',req,res));
+app.get('/api/slists/:name',      (req,res)=>res.json(getList('slists',req,res)));
+app.post('/api/slists/:name/items',(req,res)=>addItem('slists',req,res,false));
+app.delete('/api/slists/:name/items/:code',(req,res)=>delItem('slists',req,res));
+app.delete('/api/slists/:name',   (req,res)=>delList('slists',req,res));
+app.get('/api/slists/export/:name',(req,res)=>exportOne('slists',req,res));
+app.get('/api/slists/exportall',  (_,res)=>exportAll('slists',res));
 
 // ────────────────────────────────────────────────────────────────
 // 1) NEW SINGLE-ITEM LOOK-UP  (drop it right after `app.get("/api/items" …)`
@@ -144,6 +162,76 @@ app.get("/api/item/:code", (req, res) => {
   res.json(hit || {});        // {} = “not found”
 });
 
+// generic helpers for both list systems
+function addList(type, req, res){
+  const {name}=req.body||{};
+  if(!name) return res.status(400).json({error:"Missing name"});
+  const lists=loadLists(type);
+  if(lists[name]) return res.status(409).json({error:"Exists"});
+  lists[name]={items:{},created:Date.now()};
+  saveLists(lists,type);
+  res.status(201).json({message:"created"});
+}
+
+function getList(type, req, res){
+  const list = loadLists(type)[req.params.name];
+  if(!list) return res.status(404).json({error:"Not found"});
+  return list;
+}
+
+function addItem(type, req, res, merge=true){
+  const { code } = req.body||{};
+  if(!code) return res.status(400).json({error:"Missing code"});
+  const lists=loadLists(type);
+  const list = lists[req.params.name];
+  if(!list) return res.status(404).json({error:"List missing"});
+  if(merge) list.items[code]=masterItems.get(code)||{code};
+  else list.items[Date.now()]=masterItems.get(code)||{code}; // keep duplicates
+  saveLists(lists,type);
+  res.json({message:"added"});
+}
+
+function delItem(type, req, res){
+  const lists=loadLists(type);
+  const list = lists[req.params.name];
+  if(list){ delete list.items[req.params.code]; saveLists(lists,type); }
+  res.json({message:"deleted"});
+}
+
+function delList(type, req, res){
+  const lists=loadLists(type);
+  delete lists[req.params.name];
+  saveLists(lists,type);
+  res.json({message:"deleted"});
+}
+
+function exportOne(type, req, res){
+  const list = loadLists(type)[req.params.name];
+  if(!list) return res.status(404).json({error:"Not found"});
+  const rows=[["Item Code","Brand","Description","Sub-Dept"]];
+  Object.values(list.items).forEach(it=>{
+    const m = masterItems.get(it.code)||it;
+    rows.push([it.code,m.brand,m.description,m.subdept||""]);
+  });
+  res.setHeader("Content-Type","text/csv");
+  res.setHeader("Content-Disposition",`attachment; filename=${req.params.name}.csv`);
+  res.send(rows.map(r=>r.join(",")).join("\\n"));
+}
+
+function exportAll(type, res){
+  const lists=loadLists(type);
+  const rows=[["List","Item Code","Brand","Description","Sub-Dept"]];
+  Object.entries(lists).forEach(([n,l])=>{
+    Object.values(l.items).forEach(it=>{
+      const m = masterItems.get(it.code)||it;
+      rows.push([n,it.code,m.brand,m.description,m.subdept||""]);
+    });
+  });
+  res.setHeader("Content-Type","text/csv");
+  res.setHeader("Content-Disposition","attachment; filename=all_simple_lists.csv");
+  res.send(rows.map(r=>r.join(",")).join("\\n"));
+}
+
 app.get("/api/lists",(_,res)=>res.json(loadLists()));
 
 app.post("/api/lists",(req,res)=>{
@@ -166,7 +254,7 @@ app.post("/api/lists/:name/items",(req,res)=>{
   // pull from body, then canonicalise
   let { itemCode, brand, description, price, delta } = req.body;
 const raw = String(itemCode||'').replace(/\D/g,'');
-
+  
 let scale = decodeScale(raw);                 // 🆕 check for scale label
 if (scale) {
   // pick the catalogue code that actually exists in masterItems,
