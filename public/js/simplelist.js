@@ -89,10 +89,10 @@ async function render(){
   if(!current) { tbody.innerHTML=''; return; }
   const list = await (await fetch(`/api/slists/${encodeURIComponent(current)}`)).json();
   /* keep BOTH object-key and value so we can delete the right entry */
-  const entries = Object.entries(list.items);      // [key, item]
+  const entries = Object.entries(list.items).reverse();      // [key, item]
 
   /* mobile – show only last 10 */
-  const display = window.innerWidth<=600 ? entries.slice(-10) : entries;
+  const display = window.innerWidth<=600 ? entries.slice(0, 10) : entries;
   tbody.innerHTML = display.map(([key,it])=>`
     <tr data-code="${key}">
       <td class="code">${it.code}</td>
