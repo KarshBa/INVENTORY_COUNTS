@@ -221,7 +221,7 @@ function exportOne(type, req, res){
   });
   res.setHeader("Content-Type","text/csv");
   res.setHeader("Content-Disposition",`attachment; filename=${req.params.name}.csv`);
-  res.send(rows.map(r=>r.join(",")).join("\\n"));
+  res.send(rows.map(r=>r.join(",")).join("\n"));
 }
 
 function exportAll(type, res){
@@ -242,7 +242,7 @@ function exportAll(type, res){
   });
   res.setHeader("Content-Type","text/csv");
   res.setHeader("Content-Disposition","attachment; filename=all_simple_lists.csv");
-  res.send(rows.map(r=>r.join(",")).join("\\n"));
+  res.send(rows.map(r=>r.join(",")).join("\n"));
 }
 
 app.get("/api/lists",(_,res)=>res.json(loadLists()));
