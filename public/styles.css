@@ -21,3 +21,12 @@ th{background:#f1f3f4;}
   td{border:none;position:relative;padding-left:50%;}
   td::before{content:attr(data-label);position:absolute;left:0;top:0;width:48%;padding:.6rem;font-weight:600;text-transform:capitalize;}
 }
+.button-bar{
+  margin-top:.5rem;        /* ☚ space above the row                */
+  display:flex;
+  gap:.5rem;
+  justify-content:flex-end;/* right-align the whole group          */
+  flex-wrap:nowrap;        /* never wrap – stay on one line         */
+  overflow-x:auto;         /* phone: tiny horizontal scroll if long */
+  align-items:center;
+}
