@@ -25,6 +25,15 @@
       min-width:600px;        /* let the user scroll sideways      */
       font-size:.9rem;        /* shrink text a little               */
     }
+    /* tiny buttons on very small screens */
+  @media (max-width: 400px) {
+    .button-bar button {
+      font-size: 0.85rem;       /* shrink text */
+      padding: 0.4rem 0.6rem;   /* tighter padding */
+      white-space: normal;      /* allow wrapping inside the button */
+      text-align: center;       /* center the label */
+    }
+  }
     #shrink-table thead th,
     #shrink-table tbody td{
       padding:.4rem .3rem;
