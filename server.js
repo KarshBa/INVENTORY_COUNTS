@@ -140,6 +140,30 @@ app.delete('/api/slists/:name',   (req,res)=>delList('slists',req,res));
 app.get('/api/slists/export/:name',(req,res)=>exportOne('slists',req,res));
 app.get('/api/slists/exportall',  (_,res)=>exportAll('slists',res));
 
+// ─────────── EXPORT ALL SIMPLE LISTS ───────────
+app.get('/api/slists/exportall', (req, res) => {
+  const lists = loadLists('slists');
+  // build CSV rows
+  const rows = [
+    ['List','Item Code','Brand','Description','Sub-Dept']
+  ];
+  Object.entries(lists).forEach(([name, list]) => {
+    Object.values(list.items).forEach(item => {
+      const m = masterItems.get(item.code) || item;
+      rows.push([
+        name,
+        item.code,
+        m.brand,
+        m.description,
+        m.subdept || ''
+      ]);
+    });
+  });
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename=all_simple_lists.csv');
+  res.send(rows.map(r => r.join(',')).join('\n'));
+});
+
 // ────────────────────────────────────────────────────────────────
 // 1) NEW SINGLE-ITEM LOOK-UP  (drop it right after `app.get("/api/items" …)`
 // ────────────────────────────────────────────────────────────────
