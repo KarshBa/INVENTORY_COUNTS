@@ -132,11 +132,10 @@ const saveLists = (obj,type="lists") =>
 /********************* Express ***********************/
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname,"public")));
-
 // ▸▸ protect ONLY the admin page & its API
 app.use("/admin.html", adminAuth);
-app.use("/api/admin",  adminAuth);   // ← whatever prefix your admin APIs use
+app.use("/api/admin",  adminAuth);
+app.use(express.static(path.join(__dirname,"public")));
 
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
