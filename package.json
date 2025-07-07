@@ -6,7 +6,7 @@
   "dependencies": {
     "express": "^4.19.0",
     "csv-parse": "^5.5.0",
-    "express-basic-auth": "^1.2.0"
+    "express-basic-auth": "^1.2.0",
     "node-fetch": "^3.3.2",
   },
   "engines": { "node": ">=20" }
