@@ -127,7 +127,7 @@ function parseMasterCSV(csvText){
   return map;
 }
 
-async function refreshItemList(){
+export async function refreshItemList () {
   if(!ITEM_CSV_URL) return;                   // nothing configured
   try{
     const res = await fetch(ITEM_CSV_URL, { timeout: 15_000 });
