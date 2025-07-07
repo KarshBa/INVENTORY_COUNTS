@@ -184,6 +184,12 @@ app.use(express.static(path.join(__dirname,"public")));
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
 
+// Front-end “Refresh Items” button POSTs here
+app.post('/api/sync-items', async (_req, res) => {
+  await pingDownstreams();          // fire-and-forget
+  res.json({ success: true });
+});
+
 /* ---------- simple-lists (“slists”) ---------- */
 app.get('/api/slists',            (_,res)=>res.json(loadLists('slists')));
 app.post('/api/slists',           (req,res)=>addList('slists',req,res));
