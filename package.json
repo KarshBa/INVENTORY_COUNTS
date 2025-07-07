@@ -1,13 +1,17 @@
 {
-  "name": "inventory-counts-app",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": { "start": "node server.js" },
-  "dependencies": {
-    "express": "^4.19.0",
-    "csv-parse": "^5.5.0",
-    "express-basic-auth": "^1.2.0",
-    "node-fetch": "^3.3.2"
-  },
-  "engines": { "node": ">=20" }
+    "name": "inventory-counts-app",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "express": "^4.19.0",
+        "csv-parse": "^5.5.0",
+        "express-basic-auth": "^1.2.0",
+        "node-fetch": "^3.3.2"
+    },
+    "engines": {
+        "node": ">=20"
+    }
 }
