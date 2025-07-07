@@ -200,27 +200,6 @@ app.post('/api/slists/:name/items',(req,res)=>addItem('slists',req,res,false));
 app.delete('/api/slists/:name/items/:code',(req,res)=>delItem('slists',req,res));
 app.delete('/api/slists/:name',   (req,res)=>delList('slists',req,res));
 
-  // build CSV rows
-  const rows = [
-    ['List','Item Code','Brand','Description','Sub-Dept']
-  ];
-  Object.entries(lists).forEach(([name, list]) => {
-    Object.values(list.items).forEach(item => {
-      const m = masterItems.get(item.code) || item;
-      rows.push([
-        name,
-        item.code,
-        m.brand,
-        m.description,
-        m.subdept || ''
-      ]);
-    });
-  });
-  res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', 'attachment; filename=all_simple_lists.csv');
-  res.send(rows.map(r => r.join(',')).join('\n'));
-});
-
 // ────────────────────────────────────────────────────────────────
 // 1) NEW SINGLE-ITEM LOOK-UP  (drop it right after `app.get("/api/items" …)`
 // ────────────────────────────────────────────────────────────────
