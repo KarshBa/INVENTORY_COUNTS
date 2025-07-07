@@ -6,6 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { parse } from "csv-parse/sync";
 import basicAuth from "express-basic-auth";
+import fetch     from "node-fetch";
 
 /* ─── tiny helper: one shared password ─── */
 const adminAuth = basicAuth({
@@ -24,6 +25,13 @@ const __dirname  = path.dirname(__filename);
 const DATA_DIR      = process.env.DATA_DIR || path.join(__dirname, "data");
 const LISTS_FILE    = path.join(DATA_DIR, "lists_data.json");
 const ITEM_CSV_PATH = path.join(__dirname, "item_list.csv");
+
+// ───────────────────────────────
+// Remote master list (ITEM_LIST_HANDLER)
+// Set env var ITEM_CSV_URL="https://…/item_list.csv"
+// ───────────────────────────────
+const ITEM_CSV_URL = process.env.ITEM_CSV_URL;
+let   refreshTimer = null;   // prevent double scheduling on hot-reload
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(LISTS_FILE)) fs.writeFileSync(LISTS_FILE, "{}", "utf8");
@@ -102,23 +110,59 @@ const decodeScale = upc => {
   };
 };
 
-let masterItems = new Map();
-try {
-  const csv = fs.readFileSync(ITEM_CSV_PATH, "utf8");
-  const rec = parse(csv,{columns:true,skip_empty_lines:true});
-  rec.forEach(r=>{
-    const code = String(pick(r,wanted.code)||"").padStart(13,"0");
+function parseMasterCSV(csvText){
+  const rows = parse(csvText, { columns:true, skip_empty_lines:true });
+  const map  = new Map();
+  rows.forEach(r=>{
+    const code = normalizeUPC(pick(r, wanted.code));
     if(!code) return;
-    masterItems.set(code,{
+    map.set(code,{
       code,
-      brand: pick(r,wanted.brand)||"",
-      description: pick(r,wanted.description)||"",
-      price:        parseFloat(pick(r,wanted.price)||0),
-      subdept:      pick(r,wanted.subdept)     || ""    // <— store it here
+      brand      : pick(r, wanted.brand)       || "",
+      description: pick(r, wanted.description) || "",
+      price      : parseFloat(pick(r, wanted.price)||0) || "",
+      subdept    : pick(r, wanted.subdept)     || ""
     });
   });
-  console.log(`Loaded ${masterItems.size} master items.`);
-}catch(err){ console.error("CSV load failed",err); }
+  return map;
+}
+
+async function refreshItemList(){
+  if(!ITEM_CSV_URL) return;                   // nothing configured
+  try{
+    const res = await fetch(ITEM_CSV_URL, { timeout: 15_000 });
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+
+    const csvText = await res.text();
+
+    // 1️⃣ replace file atomically
+    fs.writeFileSync(`${ITEM_CSV_PATH}.tmp`, csvText);
+    fs.renameSync   (`${ITEM_CSV_PATH}.tmp`, ITEM_CSV_PATH);
+
+    // 2️⃣ rebuild the in-memory map
+    masterItems = parseMasterCSV(csvText);
+
+    console.log(`[Auto-refresh] downloaded ${masterItems.size.toLocaleString()} items @`,
+                new Date().toISOString());
+  }catch(err){
+    console.warn("[Auto-refresh] failed – keeping existing list:", err.message);
+  }
+}
+
+// First run immediately, then every 60 min
+if(!refreshTimer){
+  refreshItemList();
+  refreshTimer = setInterval(refreshItemList, 60*60*1000);
+}
+
+let masterItems = new Map();
+try{
+  const csv = fs.readFileSync(ITEM_CSV_PATH,"utf8");
+  masterItems = parseMasterCSV(csv);
+  console.log(`[Startup] loaded ${masterItems.size} master items.`);
+}catch(err){
+  console.error("CSV load failed",err);
+}
 
 /***************** helpers for lists ******************/
 const fileFor = type => type==="slists" ? SIMPLE_FILE : LISTS_FILE;
