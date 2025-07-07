@@ -193,16 +193,13 @@ app.post('/api/sync-items', async (_req, res) => {
 /* ---------- simple-lists (“slists”) ---------- */
 app.get('/api/slists',            (_,res)=>res.json(loadLists('slists')));
 app.post('/api/slists',           (req,res)=>addList('slists',req,res));
+app.get('/api/slists/exportall',  (_,res)=>exportAll('slists',res));
+app.get('/api/slists/export/:name',(req,res)=>exportOne('slists',req,res));
 app.get('/api/slists/:name',      (req,res)=>res.json(getList('slists',req,res)));
 app.post('/api/slists/:name/items',(req,res)=>addItem('slists',req,res,false));
 app.delete('/api/slists/:name/items/:code',(req,res)=>delItem('slists',req,res));
 app.delete('/api/slists/:name',   (req,res)=>delList('slists',req,res));
-app.get('/api/slists/export/:name',(req,res)=>exportOne('slists',req,res));
-app.get('/api/slists/exportall',  (_,res)=>exportAll('slists',res));
 
-// ─────────── EXPORT ALL SIMPLE LISTS ───────────
-app.get('/api/slists/exportall', (req, res) => {
-  const lists = loadLists('slists');
   // build CSV rows
   const rows = [
     ['List','Item Code','Brand','Description','Sub-Dept']
