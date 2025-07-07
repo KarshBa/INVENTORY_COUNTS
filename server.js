@@ -5,6 +5,13 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { parse } from "csv-parse/sync";
+import basicAuth from "express-basic-auth";
+
+/* ─── tiny helper: one shared password ─── */
+const adminAuth = basicAuth({
+  users: { "admin": process.env.ADMIN_PW || "changeme" },
+  challenge: true           // → browser shows the username/password dialog
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -126,6 +133,10 @@ const saveLists = (obj,type="lists") =>
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname,"public")));
+
+// ▸▸ protect ONLY the admin page & its API
+app.use("/admin.html", adminAuth);
+app.use("/api/admin",  adminAuth);   // ← whatever prefix your admin APIs use
 
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
