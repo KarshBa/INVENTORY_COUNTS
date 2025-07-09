@@ -184,10 +184,19 @@ app.use(express.static(path.join(__dirname,"public")));
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
 
-// Front-end “Refresh Items” button POSTs here
-app.post('/api/sync-items', async (_req, res) => {
-  await pingDownstreams();          // fire-and-forget
-  res.json({ success: true });
+/* ────────────────────────────────
+   Called by ITEM_LIST_HANDLER after
+   you press “Upload” or “Refresh”.
+   It just pulls the fresh CSV.
+   ────────────────────────────────*/
+app.post("/api/refresh-items", async (_req, res) => {
+  try {
+    await refreshItemList();   // helper you already defined
+    res.sendStatus(204);       // 204 No Content
+  } catch (err) {
+    console.error("[Refresh] failed", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /* ---------- simple-lists (“slists”) ---------- */
