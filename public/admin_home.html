@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Responsive Dashboard</title>
+  <style>
+    /* Reset defaults */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .dashboard {
+      display: grid;
+      /* two equal columns */
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* Make the first button span both columns */
+    .dashboard a:first-child {
+      grid-column: 1 / -1;
+    }
+
+    .dashboard a {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background-color: #e53935; /* red */
+      color: #fff;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 6px;
+      padding: 1rem;
+      transition: background-color 0.2s ease;
+    }
+    .dashboard a:hover {
+      background-color: #d32f2f;
+    }
+
+    /* yellow button override for USER PAGE */
+    .dashboard a.yellow {
+      background-color: #fdd835;
+      color: #000;
+    }
+    .dashboard a.yellow:hover {
+      background-color: #fbc02d;
+    }
+
+    /* blue button overrides */
+    .dashboard a.blue {
+      background-color: #1e88e5;
+    }
+    .dashboard a.blue:hover {
+      background-color: #1565c0;
+    }
+
+    /* gray button override for INVENTORY COUNTS ADMIN (if needed) */
+    .dashboard a.gray {
+      background-color: #6c757d;
+    }
+    .dashboard a.gray:hover {
+      background-color: #5a6268;
+    }
+
+    /* green button override for LIST TOOL */
+    .dashboard a.green {
+      background-color: #28a745;
+      /* force into first column of next available row */
+      grid-column: 1;
+    }
+    .dashboard a.green:hover {
+      background-color: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <a href="https://karshba.github.io/HGC_USER_DASH/" class="yellow">USER PAGE</a>
+    <a href="https://inventory-counts.onrender.com/user.html" class="blue">INVENTORY COUNTS</a>
+    <a href="https://inventory-counts.onrender.com/admin.html" class="gray">INVENTORY COUNTS ADMIN</a>
+    <a href="https://inventory-app-bxr3.onrender.com/user.html" class="blue">SHRINK</a>
+    <a href="https://inventory-app-bxr3.onrender.com/admin.html">SHRINK ADMIN</a>
+    <!-- LIST TOOL sits under SHRINK, in column 1 of row 4 -->
+    <a href="https://inventory-counts.onrender.com/simplelist.html" class="green">LIST TOOL</a>
+  </div>
+</body>
+</html>

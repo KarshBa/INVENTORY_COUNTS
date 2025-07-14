@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open-Scale PLU Finder</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header><h1>Open-Scale PLU Finder</h1></header>
+
+<main>
+  <!-- one-liner showing the next free 4-digit PLU -->
+  <section id="nextPluBox" class="input-group">
+    <strong>Next open PLU:</strong>
+    <span id="nextPlu" style="font-size:1.4rem;"></span>
+    <button id="refreshBtn" class="secondary" style="margin-left:1rem;">Refresh</button>
+  </section>
+
+  <hr />
+
+  <!-- ask for N free PLUs -->
+  <section class="input-group">
+    <label for="qty">Need more than one?</label>
+    <div class="flex" style="align-items:flex-end;">
+      <input type="number" id="qty" min="1" max="100" value="5" style="max-width:90px;" />
+      <button id="getBtn">Get PLUs</button>
+    </div>
+  </section>
+
+  <ul id="pluList" style="margin-top:1rem;"></ul>
+</main>
+
+<script>
+async function loadNextPlu() {
+  const box  = document.getElementById('nextPlu');
+  box.textContent = '…';
+  const res  = await fetch('/api/open-scale-plu');      // server returns { free:[1111] }
+  const data = await res.json();
+  box.textContent = data.free?.[0] ?? 'not available';
+}
+
+/* ask for N PLUs at once */
+async function fetchMany(n){
+  const list = document.getElementById('pluList');
+  list.innerHTML = 'Loading…';
+  const res  = await fetch(`/api/open-scale-plu?count=${n}`);
+  const { free } = await res.json();
+  if (!free?.length) { list.innerHTML = '<li>No free PLUs found.</li>'; return; }
+  list.innerHTML = free.map(p=>`<li><code>${p}</code></li>`).join('');
+}
+
+document.getElementById('refreshBtn').onclick = loadNextPlu;
+
+document.getElementById('getBtn').onclick = () => {
+  const n = Math.max(1, parseInt(document.getElementById('qty').value,10)||1);
+  fetchMany(n);
+  loadNextPlu();                 // also refresh the “next” box
+};
+
+/* first paint */
+loadNextPlu();
+</script>
+</body>
+</html>
