@@ -5,12 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Open-Scale PLU Finder</title>
   <link rel="stylesheet" href="style.css" />
+
+  <!-- ✦ extra tweaks specific to this tool ✦ -->
+  <style>
+    /* base look */
+    body            { font-family: Arial, sans-serif; font-size: 1.1rem; }
+    header          { background:#800000; color:#fff; text-align:center; padding:1rem 0; }
+    h1              { margin:0; font-size:1.8rem; padding:1rem 0; }
+	main            { margin-top: 1.5rem; }
+
+    /* big blue buttons */
+    button#refreshBtn,
+    button#getBtn   {
+      background:#0b63c5;   /* blue */
+      color:#fff;
+      border:none;
+      border-radius:4px;
+      padding:.6rem 1.4rem;
+      font-size:1rem;
+      cursor:pointer;
+    }
+    button#refreshBtn:hover,
+    button#getBtn:hover {
+      background:#084a97;   /* darker blue on hover */
+    }
+
+    /* ensure secondary buttons elsewhere keep their grey look */
+    button.secondary {
+      background:#eee;
+      color:#000;
+    }
+    button.secondary:hover {
+      background:#d9d9d9;
+    }
+  </style>
 </head>
 <body>
-<header><h1>Open-Scale PLU Finder</h1></header>
+<header><h1>Open-Scale PLUs</h1></header>
 
 <main>
-  <!-- one-liner showing the next free 4-digit PLU -->
   <section id="nextPluBox" class="input-group">
     <strong>Next open PLU:</strong>
     <span id="nextPlu" style="font-size:1.4rem;"></span>
@@ -19,7 +52,6 @@
 
   <hr />
 
-  <!-- ask for N free PLUs -->
   <section class="input-group">
     <label for="qty">Need more than one?</label>
     <div class="flex" style="align-items:flex-end;">
@@ -33,33 +65,31 @@
 
 <script>
 async function loadNextPlu() {
-  const box  = document.getElementById('nextPlu');
+  const box = document.getElementById('nextPlu');
   box.textContent = '…';
-  const res  = await fetch('/api/open-scale-plu');      // server returns { free:[1111] }
+  const res  = await fetch('/api/open-scale-plu');
   const data = await res.json();
   box.textContent = data.free?.[0] ?? 'not available';
 }
 
-/* ask for N PLUs at once */
 async function fetchMany(n){
   const list = document.getElementById('pluList');
   list.innerHTML = 'Loading…';
   const res  = await fetch(`/api/open-scale-plu?count=${n}`);
   const { free } = await res.json();
-  if (!free?.length) { list.innerHTML = '<li>No free PLUs found.</li>'; return; }
-  list.innerHTML = free.map(p=>`<li><code>${p}</code></li>`).join('');
+  list.innerHTML = free?.length
+      ? free.map(p=>`<li><code>${p}</code></li>`).join('')
+      : '<li>No free PLUs found.</li>';
 }
 
 document.getElementById('refreshBtn').onclick = loadNextPlu;
-
-document.getElementById('getBtn').onclick = () => {
+document.getElementById('getBtn').onclick     = () => {
   const n = Math.max(1, parseInt(document.getElementById('qty').value,10)||1);
   fetchMany(n);
-  loadNextPlu();                 // also refresh the “next” box
+  loadNextPlu();
 };
 
-/* first paint */
-loadNextPlu();
+loadNextPlu();   // initial paint
 </script>
 </body>
 </html>
