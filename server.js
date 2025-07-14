@@ -185,6 +185,35 @@ app.use(express.static(path.join(__dirname,"public")));
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
 
+/* -------------------------------------------------------
+ *  /api/open-scale-plu?count=N
+ *  Returns the first N unassigned 4-digit PLUs (1111-9999)
+ * ------------------------------------------------------*/
+app.get('/api/open-scale-plu', async (req, res) => {
+  const want = Math.max(1, Math.min(100, parseInt(req.query.count||1,10)));
+  const taken = new Set();
+
+  // read column “POS information-PLU code” from the master CSV
+  try {
+    const csv = fs.readFileSync(ITEM_CSV_PATH,'utf8');
+    parse(csv,{columns:true,skip_empty_lines:true})
+      .forEach(r=>{
+        const code = String(r['POS information-PLU code']||'').trim();
+        if(/^\d{4}$/.test(code)) taken.add(code);
+      });
+  } catch(err){
+    return res.status(500).json({error:err.message});
+  }
+
+  /* find the first N free numbers starting from 1111 */
+  const free = [];
+  for(let p=1111; p<=9999 && free.length<want; p++){
+    const s = String(p);
+    if(!taken.has(s)) free.push(s);
+  }
+  res.json({ free });
+});
+
 /* ────────────────────────────────
    Called by ITEM_LIST_HANDLER after
    you press “Upload” or “Refresh”.
