@@ -88,6 +88,27 @@
     .dashboard a.green:hover {
       background-color: #1e7e34;
     }
+	
+	/* maroon button for open scale PLUs */
+    .dashboard a.maroon {
+      background-color: #CA1038;
+      /* force into first column of next available row */
+      grid-column: 1;
+    }
+    .dashboard a.maroon:hover {
+      background-color: #AE0E30;
+    }
+	
+	/* gray button for open master list */
+    .dashboard a.gray {
+      background-color: #6c757d;
+      /* force into first column of next available row */
+      grid-column: 2;
+    }
+    .dashboard a.gray:hover {
+      background-color: #5a6268;
+    }
+	
   </style>
 </head>
 <body>
@@ -99,6 +120,8 @@
     <a href="https://inventory-app-bxr3.onrender.com/admin.html">SHRINK ADMIN</a>
     <!-- LIST TOOL sits under SHRINK, in column 1 of row 4 -->
     <a href="https://inventory-counts.onrender.com/simplelist.html" class="green">LIST TOOL</a>
+	<a href="https://inventory-counts.onrender.com/open_scale_plu.html" class="maroon">SCALE PLUS</a>
+	<a href="https://item-list-handler.onrender.com" class="gray">MASTER ITEM LIST</a>
   </div>
 </body>
 </html>
