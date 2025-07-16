@@ -64,6 +64,13 @@
 </main>
 
 <script>
+	// -----------------------------------------------------
+// helper: 4‑digit PLU  →  13‑digit “scale” UPC
+// pattern is  00 20 <PLU> 00000   → 13 digits
+function pluToUPC(plu){
+  return `0020${plu.padStart(4,'0')}00000`;
+}
+	
 async function loadNextPlu() {
   const box = document.getElementById('nextPlu');
   box.textContent = '…';
@@ -78,8 +85,8 @@ async function fetchMany(n){
   const res  = await fetch(`/api/open-scale-plu?count=${n}`);
   const { free } = await res.json();
   list.innerHTML = free?.length
-      ? free.map(p=>`<li><code>${p}</code></li>`).join('')
-      : '<li>No free PLUs found.</li>';
+  	? free.map(p => `<li><code>${p}</code> – <code>${pluToUPC(p)}</code></li>`).join('')
+  	: '<li>No free PLUs found.</li>';
 }
 
 document.getElementById('refreshBtn').onclick = loadNextPlu;
