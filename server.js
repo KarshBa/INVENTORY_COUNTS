@@ -193,14 +193,17 @@ app.get('/api/open-scale-plu', async (req, res) => {
   const want = Math.max(1, Math.min(100, parseInt(req.query.count||1,10)));
   const taken = new Set();
 
-  // read column “POS information-PLU code” from the master CSV
+ // ── tolerant lookup: collapse header to A‑Z0‑9 before comparing ──
+  const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
   try {
     const csv = fs.readFileSync(ITEM_CSV_PATH,'utf8');
-    parse(csv,{columns:true,skip_empty_lines:true})
-      .forEach(r=>{
-        const code = String(r['POS information-PLU code']||'').trim();
-        if(/^\d{4}$/.test(code)) taken.add(code);
-      });
+    parse(csv,{columns:true,skip_empty_lines:true}).forEach(r=>{
+      const key  = Object.keys(r).find(k => norm(k)==='posinformationplucode');
+      if(!key) return;                                // column not present
+      const raw  = String(r[key]).trim();             // e.g. 205 or "0205 "
+      const code = String(parseInt(raw,10)).padStart(4,'0'); // → "0205"
+      if(/^\d{4}$/.test(code)) taken.add(code);
+    });
   } catch(err){
     return res.status(500).json({error:err.message});
   }
