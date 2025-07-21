@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { parse } from "csv-parse/sync";
 import basicAuth from "express-basic-auth";
 import fetch     from "node-fetch";
+import cors from "cors";
 
 /* ─── tiny helper: one shared password ─── */
 const adminAuth = basicAuth({
@@ -176,11 +177,25 @@ const saveLists = (obj,type="lists") =>
 
 /********************* Express ***********************/
 const app = express();
+
+/* 1️⃣  allow cross‑origin calls BEFORE any routes/static */
+app.use(
+  cors({
+    origin: '*',                         // or an array of allowed origins
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
+
+/* 2️⃣  body‑parser */
 app.use(express.json());
-// ▸▸ protect ONLY the admin page & its API
-app.use("/admin.html", adminAuth);
-app.use("/api/admin",  adminAuth);
-app.use(express.static(path.join(__dirname,"public")));
+
+/* 3️⃣  protect ONLY the admin page & its API */
+app.use('/admin.html', adminAuth);
+app.use('/api/admin',  adminAuth);
+
+/* 4️⃣  static assets */
+app.use(express.static(path.join(__dirname, 'public')));
 
 /*********** API ***********/
 app.get("/api/items",(_,res)=>res.json(Object.fromEntries(masterItems)));
