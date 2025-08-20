@@ -9,10 +9,13 @@ import basicAuth from "express-basic-auth";
 import fetch     from "node-fetch";
 import cors from "cors";
 
-/* ─── tiny helper: one shared password ─── */
 const adminAuth = basicAuth({
-  users: { "admin": process.env.ADMIN_PW || "changeme" },
-  challenge: true           // → browser shows the username/password dialog
+  users: {
+    [process.env.ADMIN_USER  || 'admin'] : process.env.ADMIN_PASS  || 'changeme',
+    [process.env.USER1_USER  || 'user1'] : process.env.USER1_PASS  || 'changeme1',
+    [process.env.USER2_USER  || 'user2'] : process.env.USER2_PASS  || 'changeme2',
+  },
+  challenge: true // browser pops the login dialog
 });
 
 const __filename = fileURLToPath(import.meta.url);
