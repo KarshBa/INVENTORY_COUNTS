@@ -1,134 +1,865 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Tools</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin / Operations Portal</title>
   <style>
-    /* Reset defaults */
+    :root {
+      --bg-page: #f5f5f5;      /* light neutral */
+      --bg-card: #ffffff;
+      --text-main: #222;
+      --text-dim: #555;
+      --border-card: #ddd;
+      --radius-card: 8px;
+      --radius-btn: 6px;
+
+      /* brand accents */
+      --accent-red: #e53935;
+      --accent-red-hover: #d32f2f;
+      --accent-blue: #1e88e5;
+      --accent-blue-hover: #1565c0;
+      --accent-green: #28a745;
+      --accent-green-hover: #1e7e34;
+      --accent-maroon: #CA1038;
+      --accent-maroon-hover: #AE0E30;
+      --accent-yellow: #fdd835;
+      --accent-yellow-hover: #fbc02d;
+      --accent-gray: #6c757d;
+      --accent-gray-hover: #5a6268;
+
+      --titlebar-bg: #1e1e28;
+      --titlebar-text: #fff;
+
+      --infobar-bg: #ffffff;
+      --infobar-border: #ccc;
+
+      --menu-bg: #2f2f3a;
+      --menu-text: #fff;
+      --menu-hover-bg: #44475a;
+      --menu-border: #1a1a20;
+
+      --sidebar-border: #ccc;
+      --sidebar-bg: #fff;
+
+      --rightsection-border: #CA1038; /* default; overridden w/ modifier classes */
+      --rightsectiontitle-bg: #CA1038;
+      --rightsectiontitle-text: #fff;
+    }
+
+    /* Global reset-ish */
     * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
     }
 
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.4;
     }
 
-    .dashboard {
-      display: grid;
-      /* two equal columns */
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      width: 100%;
-      max-width: 480px;
-    }
-
-    /* Make the first button span both columns */
-    .dashboard a:first-child {
-      grid-column: 1 / -1;
-    }
-
-    .dashboard a {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      background-color: #e53935; /* red */
-      color: #fff;
+    a {
+      color: inherit;
       text-decoration: none;
-      font-size: 1rem;
-      font-weight: bold;
-      border-radius: 6px;
+    }
+
+    /****************************************
+     * 1. TITLE BAR
+     ****************************************/
+    #titlebar {
+      background-color: var(--titlebar-bg);
+      color: var(--titlebar-text);
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 1rem;
-      transition: background-color 0.2s ease;
-    }
-    .dashboard a:hover {
-      background-color: #d32f2f;
+      text-align: center;
+      border-bottom: 2px solid var(--menu-border);
     }
 
-    /* yellow button override for USER PAGE */
-    .dashboard a.yellow {
-      background-color: #fdd835;
-      color: #000;
-    }
-    .dashboard a.yellow:hover {
-      background-color: #fbc02d;
+    #titlebar h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
     }
 
-    /* blue button overrides */
-    .dashboard a.blue {
-      background-color: #1e88e5;
-    }
-    .dashboard a.blue:hover {
-      background-color: #1565c0;
+    /* TODO: drop logo image here later */
+
+    /****************************************
+     * 2. INFO BAR
+     ****************************************/
+    #infobar {
+      background-color: var(--infobar-bg);
+      border-bottom: 1px solid var(--infobar-border);
+      padding: 0.5rem 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      color: var(--text-dim);
     }
 
-    /* gray button override for INVENTORY COUNTS ADMIN (if needed) */
-    .dashboard a.gray {
-      background-color: #6c757d;
-    }
-    .dashboard a.gray:hover {
-      background-color: #5a6268;
+    #infobar .date {
+      font-weight: 500;
+      color: var(--text-main);
     }
 
-    /* green button override for LIST TOOL */
-    .dashboard a.green {
-      background-color: #28a745;
-      /* force into first column of next available row */
-      grid-column: 1;
+    #infobar form {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-    .dashboard a.green:hover {
-      background-color: #1e7e34;
+
+    #infobar input[type="text"] {
+      border: 1px solid #bbb;
+      border-radius: var(--radius-btn);
+      padding: 0.4rem 0.6rem;
+      font-size: 0.85rem;
+      background-color: #fff;
+      min-width: 180px;
     }
-	
-	/* maroon button for open scale PLUs */
-    .dashboard a.maroon {
-      background-color: #CA1038;
-      /* force into first column of next available row */
-      grid-column: 1;
+
+    #infobar button[type="submit"] {
+      background-color: var(--accent-blue);
+      border: none;
+      color: #fff;
+      font-size: 0.8rem;
+      line-height: 1;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
     }
-    .dashboard a.maroon:hover {
-      background-color: #AE0E30;
+
+    #infobar button[type="submit"]:hover {
+      background-color: var(--accent-blue-hover);
     }
-	
-	/* gray button for open master list */
-    .dashboard a.gray {
-      background-color: #6c757d;
-      /* force into first column of next available row */
-      grid-column: 2;
+
+    /****************************************
+     * 3. TOP NAV MENU (with dropdowns)
+     ****************************************/
+    .menu {
+      background-color: var(--menu-bg);
+      border-bottom: 2px solid var(--menu-border);
+      font-size: 0.9rem;
     }
-    .dashboard a.gray:hover {
-      background-color: #5a6268;
+
+    .menu > ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
     }
-	
+
+    .menu > ul > li {
+      position: relative;
+    }
+
+    .menu > ul > li > a {
+      color: var(--menu-text);
+      display: block;
+      padding: 0.75rem 1rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .menu > ul > li > a:hover,
+    .menu > ul > li:hover > a {
+      background-color: var(--menu-hover-bg);
+    }
+
+    /* Dropdown */
+    .menu ul li ul {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 220px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      display: none;
+      flex-direction: column;
+      padding: 0.5rem 0;
+      z-index: 10;
+    }
+	.menu ul li ul,
+	.menu ul li ul li {
+	  list-style: none;
+	}
+    .menu ul li:hover > ul {
+      display: flex;
+    }
+
+    .menu ul li ul li a {
+      color: #222;
+      padding: 0.6rem 0.9rem;
+      display: block;
+      font-weight: 400;
+      font-size: 0.9rem;
+    }
+
+    .menu ul li ul li a:hover {
+      background-color: #f0f0f0;
+    }
+
+    /* Mobile fallback: stack nav items vertically */
+    @media (max-width: 700px) {
+      .menu > ul {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .menu > ul > li {
+        width: 100%;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .menu ul li ul {
+        position: static;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        display: none;
+        padding: 0;
+      }
+      .menu ul li:hover > ul {
+        display: block;
+      }
+      /* TODO: hamburger menu here for better mobile UX */
+    }
+
+    /****************************************
+     * 4. PAGE LAYOUT WRAPPER
+     ****************************************/
+    #page {
+      max-width: 1200px;
+      margin: 1.5rem auto 2rem auto;
+      padding: 0 1rem;
+    }
+
+    /* Two-column body similar to #leftmain / #rightmain */
+    .page-flex {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+
+    #leftmain {
+      flex: 1 1 650px;         /* ~70% on desktop */
+      min-width: 300px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem 1.5rem;
+    }
+
+    #rightmain {
+      flex: 0 0 300px;         /* ~30% on desktop */
+      max-width: 340px;
+      min-width: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      #leftmain {
+        flex: 1 1 100%;
+      }
+      #rightmain {
+        flex: 1 1 100%;
+        max-width: 100%;
+      }
+    }
+
+    /****************************************
+     * 5. LEFT COLUMN CONTENT CARDS
+     ****************************************/
+    .contentsection {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-card);
+      padding: 1rem 1.25rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .contentsection h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+
+    .contentsection p {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .tool-links {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .tool-links a {
+      display: block;
+      border-radius: var(--radius-btn);
+      padding: 0.7rem 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    /* We’ll use modifier classes to reuse your brand colors */
+    .btn-red     { background-color: var(--accent-red); }
+    .btn-red:hover     { background-color: var(--accent-red-hover); }
+
+    .btn-blue    { background-color: var(--accent-blue); }
+    .btn-blue:hover    { background-color: var(--accent-blue-hover); }
+
+    .btn-green   { background-color: var(--accent-green); }
+    .btn-green:hover   { background-color: var(--accent-green-hover); }
+
+    .btn-maroon  { background-color: var(--accent-maroon); }
+    .btn-maroon:hover  { background-color: var(--accent-maroon-hover); }
+
+    .btn-yellow  { background-color: var(--accent-yellow); color:#000; }
+    .btn-yellow:hover  { background-color: var(--accent-yellow-hover); color:#000; }
+
+    .btn-gray    { background-color: var(--accent-gray); }
+    .btn-gray:hover    { background-color: var(--accent-gray-hover); }
+
+    /****************************************
+     * 6. RIGHT SIDEBAR BOXES
+     ****************************************/
+    .rightsection {
+      background-color: var(--sidebar-bg);
+      border: 2px solid var(--rightsection-border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+    }
+
+    .rightsection-inner {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .rightsectiontitle {
+      background-color: var(--rightsectiontitle-bg);
+      color: var(--rightsectiontitle-text);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      line-height: 1.2;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .rightsection ul {
+      list-style: none;
+      padding-left: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .rightsection ul li {
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .rightsection ul li a {
+      color: var(--accent-blue);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .rightsection ul li a:hover {
+      text-decoration: underline;
+    }
+
+    /* Color modifiers for sidebar boxes */
+    .rs-maroon {
+      --rightsection-border: var(--accent-maroon);
+      --rightsectiontitle-bg: var(--accent-maroon);
+      --rightsectiontitle-text: #fff;
+    }
+
+    .rs-blue {
+      --rightsection-border: var(--accent-blue);
+      --rightsectiontitle-bg: var(--accent-blue);
+      --rightsectiontitle-text: #fff;
+    }
+
+    /****************************************
+     * 7. Forms in sidebar
+     ****************************************/
+    .sidebar-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+    }
+
+    .sidebar-form label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .sidebar-form input[type="text"] {
+      width: 100%;
+      border: 1px solid #bbb;
+      border-radius: var(--radius-btn);
+      padding: 0.5rem 0.6rem;
+      font-size: 0.85rem;
+    }
+
+    .sidebar-form button[type="submit"] {
+      background-color: var(--accent-green);
+      border: none;
+      color: #fff;
+      font-size: 0.8rem;
+      line-height: 1;
+      padding: 0.6rem 0.75rem;
+      border-radius: var(--radius-btn);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .sidebar-form button[type="submit"]:hover {
+      background-color: var(--accent-green-hover);
+    }
+
+    /****************************************
+     * 8. Utility / footer-ish spacing
+     ****************************************/
+    footer {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem 3rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
   </style>
 </head>
 <body>
-  <div class="dashboard">
-    <a href="https://inventory-counts.onrender.com/user_home.html" class="yellow">USER PAGE</a>
-	<a href="https://inventory-counts.onrender.com/simplelist.html" class="green">LIST TOOL</a>
-	<a href="https://item-list-handler.onrender.com/item_list.html" class="blue">ITEM SEARCH</a>
-	  <a href="https://movement-3ka5.onrender.com/item_movement.html" class="yellow">MOVEMENT</a>
-	  <a href="https://movement-3ka5.onrender.com/" class="gray">MOVEMENT ADMIN</a>
-	<a href="https://inventory-app-bxr3.onrender.com/user.html" class="blue">SHRINK</a>
-    <a href="https://inventory-app-bxr3.onrender.com/admin.html">SHRINK ADMIN</a>
-    <a href="https://inventory-counts.onrender.com/user.html" class="blue">INVENTORY COUNTS</a>
-    <a href="https://inventory-counts.onrender.com/admin.html" class="gray">INVENTORY ADMIN</a>
-    <!-- LIST TOOL sits under SHRINK, in column 1 of row 4 -->
-	<a href="https://sales-batches-app.onrender.com" class="yellow">PRICE CHANGES</a>
-	<a href="https://inventory-counts.onrender.com/open_scale_plu.html" class="maroon">SCALE PLUS</a>
-	<a href="https://item-list-handler.onrender.com" class="gray">MASTER ITEM LIST</a>
-	<a href="https://movement-3ka5.onrender.com/department_sales.html" class="green">LAST WEEK SALES</a>
+
+  <!-- 1. TITLE BAR -->
+  <div id="titlebar">
+    <h1>Admin / Operations Portal</h1>
+    <!-- TODO: insert logo img here -->
   </div>
+
+<!-- 2. INFO BAR -->
+ <!--  <div id="infobar">
+    <div class="date">October 24, 2025</div>
+    <form
+		action="https://item-list-handler.onrender.com/item_list.html"
+		method="get"
+		aria-label="Portal Search"
+>
+		<input
+			type="text"
+			name="q"
+			placeholder="Search tools, items, PLUs..."
+			aria-label="Search"
+			required
+		/>
+  <button type="submit">Search</button>
+</form>
+  </div> -->
+
+  <!-- 3. NAV MENU -->
+  <div class="menu" role="navigation" aria-label="Primary">
+    <ul>
+      <li>
+        <a href="https://inventory-counts.onrender.com/admin_home.html">Home</a>
+      </li>
+
+	  <li>
+        <a href="#">Quick ▾</a>
+        <ul>
+          <li>
+            <a href="https://inventory-counts.onrender.com/simplelist.html">
+              List Tool
+            </a>
+          </li>
+		  <li>
+            <a href="https://item-list-handler.onrender.com/item_list.html">
+              Item Search
+            </a>
+          </li>
+          <li>
+            <a href="https://inventory-counts.onrender.com/user_home.html">
+              User Page
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="#">Movement / Sales ▾</a>
+        <ul>
+          <li>
+            <a href="https://movement-3ka5.onrender.com/item_movement.html">
+              Movement
+            </a>
+          </li>
+          <li>
+            <a href="https://movement-3ka5.onrender.com/">
+              Movement Admin
+            </a>
+          </li>
+          <li>
+            <a href="https://movement-3ka5.onrender.com/department_sales.html">
+              Last Week Sales
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="#">Shrink ▾</a>
+        <ul>
+          <li>
+            <a href="https://inventory-app-bxr3.onrender.com/user.html">
+              Shrink (User)
+            </a>
+          </li>
+          <li>
+            <a href="https://inventory-app-bxr3.onrender.com/admin.html">
+              Shrink Admin
+            </a>
+          </li>
+        </ul>
+      </li>
+
+      <li>
+        <a href="#">Price Changes ▾</a>
+        <ul>
+          <li>
+            <a href="https://sales-batches-app.onrender.com">
+              Price Changes
+            </a>
+          </li>
+        </ul>
+      </li>
+
+	  <li>
+        <a href="#">Purchasing ▾</a>
+        <ul>
+          <li>
+            <a href="https://hq.geniuscentral.com/login">
+              Genius Central
+            </a>
+          </li>
+          <li>
+            <a href="https://myunfi.com/">
+              MyUNFI
+            </a>
+          </li>
+          <li>
+            <a href="https://connect.kehe.com/callback/login">
+              KeHe
+            </a>
+          </li>
+          <li>
+            <a href="https://www.performancefoodservice.com/Company/Sign-In">
+              Performance
+            </a>
+          </li>
+		  <li>
+            <a href="https://www.ncg.coop/">
+              NCG.coop
+            </a>
+          </li>
+		  <li>
+            <a href="https://ncga-coop.csod.com/login/render.aspx?id=defaultclp">
+              Coop-U
+            </a>
+          </li>
+        </ul>
+      </li>
+	  
+	  <li>
+        <a href="#">Item Maintenance ▾</a>
+        <ul>
+          <li>
+            <a href="https://inventory-counts.onrender.com/open_scale_plu.html">
+              Scale PLU / Scale Plus
+            </a>
+          </li>
+          <li>
+            <a href="https://item-list-handler.onrender.com">
+              Master Item List
+            </a>
+          </li>
+        </ul>
+      </li>
+
+	  <li>
+        <a href="#">Inventory ▾</a>
+        <ul>
+          <li>
+            <a href="https://inventory-counts.onrender.com/user.html">
+              Inventory Counts (User)
+            </a>
+          </li>
+          <li>
+            <a href="https://inventory-counts.onrender.com/admin.html">
+              Inventory Counts (Admin)
+            </a>
+          </li>
+        </ul>
+      </li>
+
+    </ul>
+  </div>
+
+  <!-- 4. PAGE BODY -->
+  <div id="page">
+    <div class="page-flex">
+
+      <!-- LEFT COLUMN MAIN CONTENT -->
+      <div id="leftmain">
+
+        <!-- Inventory & Item Data -->
+        <section class="contentsection">
+          <h2>Purchasing</h2>
+          <p>
+            Distributor Links
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-gray"
+              href="https://hq.geniuscentral.com/login"
+            >
+              Genius Central
+            </a>
+			<a
+              class="btn-green"
+              href="https://myunfi.com/"
+            >
+              MyUNFI
+            </a>
+            <a
+              class="btn-blue"
+              href="https://connect.kehe.com/callback/login"
+            >
+              KeHE
+            </a>
+            <a
+              class="btn-maroon"
+              href="https://www.performancefoodservice.com/Company/Sign-In"
+            >
+              Performance
+            </a>
+          </div>
+        </section>
+		
+		<!-- Online Shopping -->
+        <section class="contentsection">
+          <h2>eCommerce</h2>
+          <p>
+            Online Shopping Fulfillment Platform
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-green"
+              href="https://platform.grocerist.com/accounts/sign_in"
+            >
+              Grocerist Fulfillment
+            </a>
+          </div>
+        </section>
+
+        <!-- Movement & Sales -->
+        <section class="contentsection">
+          <h2>Movement &amp; Sales</h2>
+          <p>
+            Pull sales and movement by item or by department. Use these links
+            for recent movement audits and departmental sales visibility.
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-yellow"
+              href="https://movement-3ka5.onrender.com/item_movement.html"
+            >
+              Movement
+            </a>
+            <a
+              class="btn-gray"
+              href="https://movement-3ka5.onrender.com/"
+            >
+              Movement Admin
+            </a>
+            <a
+              class="btn-green"
+              href="https://movement-3ka5.onrender.com/department_sales.html"
+            >
+              Last Week Sales
+            </a>
+          </div>
+        </section>
+
+        <!-- Shrink / Loss -->
+        <section class="contentsection">
+          <h2>Shrink / Loss</h2>
+          <p>
+            Record and review shrink. Use the Admin view for reporting,
+            oversight, and department accountability.
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-blue"
+              href="https://inventory-app-bxr3.onrender.com/user.html"
+            >
+              Shrink (User)
+            </a>
+            <a
+              class="btn-red"
+              href="https://inventory-app-bxr3.onrender.com/admin.html"
+            >
+              Shrink Admin
+            </a>
+          </div>
+        </section>
+
+        <!-- Price Changes -->
+        <section class="contentsection">
+          <h2>Price Changes</h2>
+          <p>
+            Create, edit, and manage sale batches / price change batches for the
+            floor.
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-yellow"
+              href="https://sales-batches-app.onrender.com"
+            >
+              Price Changes
+            </a>
+          </div>
+        </section>
+
+        <!-- Quick Tools -->
+        <section class="contentsection">
+          <h2>Quick Tools</h2>
+          <p>
+            Fast-access utilities for floor staff and supervisors.
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-blue"
+              href="https://inventory-counts.onrender.com/user_home.html"
+            >
+              User Page
+            </a>
+            <a
+              class="btn-green"
+              href="https://inventory-counts.onrender.com/simplelist.html"
+            >
+              List Tool
+            </a>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN SIDEBAR -->
+      <aside id="rightmain" aria-label="Sidebar">
+
+        <!-- Quick Links box -->
+       <!-- <div class="rightsection rs-maroon">
+          <div class="rightsectiontitle">Quick Links</div>
+          <div class="rightsection-inner">
+            <ul>
+              <li>
+                <a href="https://inventory-counts.onrender.com/user.html">
+                  Inventory Counts (User)
+                </a>
+              </li>
+              <li>
+                <a href="https://sales-batches-app.onrender.com">
+                  Price Changes
+                </a>
+              </li>
+              <li>
+                <a href="https://inventory-app-bxr3.onrender.com/admin.html">
+                  Shrink Admin
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div> -->
+
+        <!-- Search Tools box -->
+        <div class="rightsection rs-blue">
+          <div class="rightsectiontitle">Search Items / PLUs</div>
+          <div class="rightsection-inner">
+		<form
+  class="sidebar-form"
+  action="https://item-list-handler.onrender.com/item_list.html"
+  method="get"
+  target="_blank"
+>
+  <label for="sidebar-search">
+    Look up an item number, description, or PLU:
+  </label>
+  <input
+    type="text"
+    id="sidebar-search"
+    name="q"
+    placeholder="e.g. 4011 bananas"
+    aria-label="Search items / PLUs"
+    required
+  />
+  <button type="submit">
+    Search
+  </button>
+</form>
+
+            <ul style="margin-top:1rem;">
+              <li>
+                <a href="https://item-list-handler.onrender.com/item_list.html">
+                  Open Item Search
+                </a>
+              </li>
+              <li>
+                <a href="https://inventory-counts.onrender.com/open_scale_plu.html">
+                  Scale PLU / Scale Plus
+                </a>
+              </li>
+              <li>
+                <a href="https://item-list-handler.onrender.com">
+                  Master Item List
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </aside>
+
+    </div>
+  </div>
+
+  <footer>
+    Admin / Operations Portal &middot; Internal Use Only
+  </footer>
+
 </body>
 </html>
-
-
