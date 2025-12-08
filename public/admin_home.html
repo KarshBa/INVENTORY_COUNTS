@@ -454,6 +454,15 @@
     }
 
   </style>
+	<script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const styleTag = document.querySelector("style");
+      if (styleTag) {
+        const version = "?v=" + Date.now();
+        styleTag.setAttribute("data-cache", version);
+      }
+    });
+  </script>
 </head>
 <body>
 
@@ -683,6 +692,12 @@
             >
               Grocerist Fulfillment
             </a>
+			<a
+              class="btn-gray"
+              href="https://admin.shopify.com/store/n6scrf-in"
+            >
+              Shopify Admin
+            </a>
           </div>
         </section>
 
@@ -776,6 +791,34 @@
             </a>
           </div>
         </section>
+		
+		<!-- Managers -->
+        <section class="contentsection">
+          <h2>Manager Tools</h2>
+          <p>
+            Utilities for supervisors.
+          </p>
+          <div class="tool-links">
+            <a
+              class="btn-red"
+              href="https://access.paylocity.com"
+            >
+              Paylocity
+            </a>
+            <a
+              class="btn-gray"
+              href="https://lbmxmarketplace.com"
+            >
+              LBMX
+            </a>
+			<a
+              class="btn-blue"
+              href="https://satori.spins.com/"
+            >
+              SPINS
+            </a>
+          </div>
+        </section>
 
       </div>
 
@@ -863,5 +906,4 @@
 
 </body>
 </html>
-
 
