@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Open-Scale PLU Finder</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=1" />
   <link rel="stylesheet" href="https://item-list-handler.onrender.com/shared/nav.css?v=1.0.0">
   <!-- ✦ extra tweaks specific to this tool ✦ -->
   <style>
@@ -74,9 +74,10 @@ function pluToUPC(plu){
 async function loadNextPlu() {
   const box = document.getElementById('nextPlu');
   box.textContent = '…';
-  const res  = await fetch('/api/open-scale-plu');
+  const res  = await fetch('/api/open-scale-plu?count=5');
   const data = await res.json();
-  box.textContent = data.free?.[0] ?? 'not available';
+  const p = data.free?.[0];
+  box.textContent = p ? `${p}  –  ${pluToUPC(p)}` : 'not available';
 }
 
 async function fetchMany(n){
@@ -89,7 +90,7 @@ async function fetchMany(n){
   	: '<li>No free PLUs found.</li>';
 }
 
-document.getElementById('refreshBtn').onclick = loadNextPlu;
+document.getElementById('refreshBtn').onclick = () => { fetchMany(5); loadNextPlu(); };
 document.getElementById('getBtn').onclick     = () => {
   const n = Math.max(1, parseInt(document.getElementById('qty').value,10)||1);
   fetchMany(n);
@@ -97,9 +98,11 @@ document.getElementById('getBtn').onclick     = () => {
 };
 
 loadNextPlu();   // initial paint
+fetchMany(5);
 </script>
 <script src="https://item-list-handler.onrender.com/shared/nav.js?v=1.0.0"></script>
 </body>
 </html>
+
 
 
