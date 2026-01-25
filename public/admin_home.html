@@ -211,30 +211,74 @@
       background-color: #f0f0f0;
     }
 
-    /* Mobile fallback: stack nav items vertically */
-    @media (max-width: 700px) {
-      .menu > ul {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .menu > ul > li {
-        width: 100%;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      .menu ul li ul {
-        position: static;
-        border: 0;
-        border-radius: 0;
-        box-shadow: none;
-        display: none;
-        padding: 0;
-      }
-      .menu ul li:hover > ul {
-        display: block;
-      }
-      /* TODO: hamburger menu here for better mobile UX */
-    }
+    /* Toggle button (hidden on desktop) */
+.menu-toggle{
+  display: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--menu-text);
+  font: inherit;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+.menu-toggle:hover{
+  background-color: var(--menu-hover-bg);
+}
 
+/* Mobile: hamburger + collapsible menu */
+@media (max-width: 700px){
+  .menu-toggle{
+    display: block;
+  }
+
+  /* Hide the list until opened */
+  .menu > ul{
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .menu.is-open > ul{
+    display: flex;
+  }
+
+  .menu > ul > li{
+    width: 100%;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Disable hover-open on mobile */
+  .menu ul li:hover > ul{
+    display: none;
+  }
+
+  /* Submenus collapsed by default */
+  .menu ul li ul{
+    position: static;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: none;
+    padding: 0;
+    background: var(--menu-bg);
+  }
+
+  /* Open submenu when tapped */
+  .menu > ul > li.submenu-open > ul{
+    display: block;
+  }
+
+  .menu ul li ul li a{
+    color: var(--menu-text);
+    padding-left: 2rem; /* indent submenu items */
+  }
+
+  .menu ul li ul li a:hover{
+    background-color: var(--menu-hover-bg);
+  }
+}
+	  
     /****************************************
      * 4. PAGE LAYOUT WRAPPER
      ****************************************/
@@ -493,7 +537,11 @@
 
   <!-- 3. NAV MENU -->
   <div class="menu" role="navigation" aria-label="Primary">
-    <ul>
+	<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu-list">
+	☰ Menu
+	</button>
+	  
+	<ul id="menu-list">
       <li>
         <a href="https://inventory-counts.onrender.com/admin_home.html">Home</a>
       </li>
@@ -931,5 +979,57 @@
     Admin / Operations Portal &middot; Internal Use Only
   </footer>
 
+	<script>
+(() => {
+  const menuEl = document.querySelector(".menu");
+  if (!menuEl) return;
+
+  const btn = menuEl.querySelector(".menu-toggle");
+  const list = menuEl.querySelector("#menu-list");
+  if (!btn || !list) return;
+
+  function setExpanded(isOpen) {
+    menuEl.classList.toggle("is-open", isOpen);
+    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  }
+
+  btn.addEventListener("click", () => {
+    setExpanded(!menuEl.classList.contains("is-open"));
+  });
+
+  // Tap-to-open submenus on mobile
+  menuEl.querySelectorAll(":scope > ul > li > a").forEach((a) => {
+    const li = a.parentElement;
+    const submenu = li && li.querySelector(":scope > ul");
+    if (!submenu) return;
+
+    a.addEventListener("click", (e) => {
+      if (a.getAttribute("href") === "#") {
+        e.preventDefault();
+        li.classList.toggle("submenu-open");
+      }
+    });
+  });
+
+  // Close menu after choosing a real link (mobile convenience)
+  menuEl.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a) return;
+    if (a.getAttribute("href") && a.getAttribute("href") !== "#") {
+      setExpanded(false);
+    }
+  });
+
+  // If resized to desktop, reset open states
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 700) {
+      setExpanded(false);
+      menuEl.querySelectorAll(".submenu-open").forEach((li) => li.classList.remove("submenu-open"));
+    }
+  });
+})();
+</script>
+	
 </body>
 </html>
+
