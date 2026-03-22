@@ -178,6 +178,34 @@ const loadLists = (type="lists") =>
 const saveLists = (obj,type="lists") =>
   fs.writeFileSync(fileFor(type), JSON.stringify(obj,null,2));
 
+const normalizeListSafeName = name =>
+  String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+
+function makeUniqueSafeName(displayName, lists) {
+  const base = normalizeListSafeName(displayName) || 'list';
+  let safeName = base;
+  let i = 2;
+  while (lists[safeName]) {
+    safeName = `${base}-${i++}`;
+  }
+  return safeName;
+}
+
+function getListOr404(lists, safeName, res) {
+  const list = lists[safeName];
+  if (!list) {
+    res.status(404).json({ error: "Not found" });
+    return null;
+  }
+  return list;
+}
+
 /********************* Express ***********************/
 const app = express();
 
@@ -284,17 +312,31 @@ app.get("/api/item/:code", (req, res) => {
 
 // generic helpers for both list systems
 function addList(type, req, res){
-  const {name}=req.body||{};
-  if(!name) return res.status(400).json({error:"Missing name"});
-  const lists=loadLists(type);
-  if(lists[name]) return res.status(409).json({error:"Exists"});
-  lists[name]={items:{},created:Date.now()};
-  saveLists(lists,type);
-  res.status(201).json({message:"created"});
+  const { name } = req.body || {};
+  const displayName = String(name || '').trim();
+  if (!displayName) return res.status(400).json({ error:"Missing name" });
+
+  const lists = loadLists(type);
+  const duplicateDisplay = Object.values(lists).some(
+    list => (list.displayName || '').trim().toLowerCase() === displayName.toLowerCase()
+  );
+  if (duplicateDisplay) return res.status(409).json({ error:"Exists" });
+
+  const safeName = makeUniqueSafeName(displayName, lists);
+  lists[safeName] = {
+    displayName,
+    safeName,
+    items: {},
+    created: Date.now()
+  };
+
+  saveLists(lists, type);
+  res.status(201).json({ message:"created", safeName, displayName });
 }
 
 function getList(type, req, res){
-  const list = loadLists(type)[req.params.name];
+  const safeName = decodeURIComponent(req.params.name || '');
+  const list = loadLists(type)[safeName];
   if(!list) return res.status(404).json({error:"Not found"});
   return list;
 }
@@ -302,45 +344,52 @@ function getList(type, req, res){
 function addItem(type, req, res, merge=true){
   const { code } = req.body||{};
   if(!code) return res.status(400).json({error:"Missing code"});
-  const lists=loadLists(type);
-  const list = lists[req.params.name];
+  const lists = loadLists(type);
+  const safeName = decodeURIComponent(req.params.name || '');
+  const list = lists[safeName];
   if(!list) return res.status(404).json({error:"List missing"});
   if(merge) list.items[code]=masterItems.get(code)||{code};
-  else list.items[Date.now()]=masterItems.get(code)||{code}; // keep duplicates
+  else list.items[Date.now()]=masterItems.get(code)||{code};
   saveLists(lists,type);
   res.json({message:"added"});
 }
 
 function delItem(type, req, res){
-  const lists=loadLists(type);
-  const list = lists[req.params.name];
+  const lists = loadLists(type);
+  const safeName = decodeURIComponent(req.params.name || '');
+  const list = lists[safeName];
   if(list){ delete list.items[req.params.code]; saveLists(lists,type); }
   res.json({message:"deleted"});
 }
 
 function delList(type, req, res){
-  const lists=loadLists(type);
-  delete lists[req.params.name];
+  const lists = loadLists(type);
+  const safeName = decodeURIComponent(req.params.name || '');
+  delete lists[safeName];
   saveLists(lists,type);
   res.json({message:"deleted"});
 }
 
 function exportOne(type, req, res){
-  const list = loadLists(type)[req.params.name];
+  const safeName = decodeURIComponent(req.params.name || '');
+  const list = loadLists(type)[safeName];
   if(!list) return res.status(404).json({error:"Not found"});
-  const rows=[["Item Code","Brand","Description","Price","Sub-Dept"]];  
+
+  const rows=[["Item Code","Brand","Description","Price","Sub-Dept"]];
   Object.values(list.items).forEach(it=>{
     const m = masterItems.get(it.code)||it;
     rows.push([
        it.code,
        m.brand,
        m.description,
-       m.price ?? "",        // empty if unknown
+       m.price ?? "",
        m.subdept || ""
      ]);
   });
+
+  const filenameBase = (list.displayName || safeName).replace(/[^\w.-]+/g, '_');
   res.setHeader("Content-Type","text/csv");
-  res.setHeader("Content-Disposition",`attachment; filename=${req.params.name}.csv`);
+  res.setHeader("Content-Disposition",`attachment; filename=${filenameBase}.csv`);
   res.send(rows.map(r=>r.join(",")).join("\n"));
 }
 
@@ -368,17 +417,31 @@ function exportAll(type, res){
 app.get("/api/lists",(_,res)=>res.json(loadLists()));
 
 app.post("/api/lists",(req,res)=>{
-  const {name}=req.body;
-  if(!name) return res.status(400).json({error:"Missing name"});
-  const lists=loadLists();
-  if(lists[name]) return res.status(409).json({error:"Exists"});
-  lists[name]={items:{},created:Date.now()};
+  const { name } = req.body || {};
+  const displayName = String(name || '').trim();
+  if(!displayName) return res.status(400).json({error:"Missing name"});
+
+  const lists = loadLists();
+  const duplicateDisplay = Object.values(lists).some(
+    list => (list.displayName || '').trim().toLowerCase() === displayName.toLowerCase()
+  );
+  if (duplicateDisplay) return res.status(409).json({error:"Exists"});
+
+  const safeName = makeUniqueSafeName(displayName, lists);
+  lists[safeName] = {
+    displayName,
+    safeName,
+    items: {},
+    created: Date.now()
+  };
+
   saveLists(lists);
-  res.status(201).json({message:"created"});
+  res.status(201).json({message:"created", safeName, displayName});
 });
 
 app.get("/api/lists/:name",(req,res)=>{
-  const list=loadLists()[req.params.name];
+  const safeName = decodeURIComponent(req.params.name || '');
+  const list = loadLists()[safeName];
   if(!list) return res.status(404).json({error:"Not found"});
   res.json(list);
 });
@@ -399,8 +462,9 @@ if (scale) {
 }
 
 if(!itemCode) return res.status(400).json({error:"Missing code"});
-  const lists=loadLists();
-  const list=lists[req.params.name];
+  const lists = loadLists();
+  const safeName = decodeURIComponent(req.params.name || '');
+  const list = lists[safeName];
   if(!list) return res.status(404).json({error:"List missing"});
   // ------------------------------------------------------------------
   //  VARIABLE-WEIGHT ITEMS: make *every sticker* its own row so each
@@ -441,8 +505,9 @@ if(!itemCode) return res.status(400).json({error:"Missing code"});
 });
 
 app.delete("/api/lists/:name",(req,res)=>{
-  const lists=loadLists();
-  delete lists[req.params.name];
+  const lists = loadLists();
+  const safeName = decodeURIComponent(req.params.name || '');
+  delete lists[safeName];
   saveLists(lists);
   res.json({message:"deleted"});
 });
@@ -450,8 +515,9 @@ app.delete("/api/lists/:name",(req,res)=>{
 app.delete("/api/lists",(_,res)=>{saveLists({});res.json({message:"all cleared"});});
 
 app.get("/api/export/:name", (req, res) => {
+  const safeName = decodeURIComponent(req.params.name || '');
   const base = c => c.split('-')[0];
-  const list = loadLists()[req.params.name];
+  const list = loadLists()[safeName];
   if (!list) return res.status(404).json({ error: "List not found" });
 
   // Header now includes Sub-department
@@ -476,8 +542,9 @@ app.get("/api/export/:name", (req, res) => {
 
   rows.push(["","","","","","List Total",grand]);
 
+  const filenameBase = (list.displayName || safeName).replace(/[^\w.-]+/g, '_');
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", `attachment; filename=${req.params.name}.csv`);
+  res.setHeader("Content-Disposition", `attachment; filename=${filenameBase}.csv`);
   res.send(rows.map(r => r.join(",")).join("\r\n"));
 });
 
@@ -493,8 +560,8 @@ app.get("/api/exportall", (_, res) => {
       const t = it.qty * it.price;
       grand += t;
       const subdept = masterItems.get(base(it.code))?.subdept || "";
-      rows.push([
-        listName,
+        rows.push([
+        list.displayName || listName,
         it.code,
         it.brand,
         subdept,
