@@ -150,7 +150,8 @@ export async function refreshItemList (source = 'auto') {   // 'auto' | 'manual'
     console.log(`[${tag}] downloaded ${masterItems.size.toLocaleString()} items @`,
                 new Date().toISOString());
   }catch(err){
-    console.warn(`[${tag}] failed – keeping existing list:`, err.message);
+  const tag = source === 'manual' ? 'Manual-refresh' : 'Auto-refresh';
+  console.warn(`[${tag}] failed – keeping existing list:`, err.message);
   }
 }
 
