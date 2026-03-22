@@ -40,11 +40,21 @@ button[data-delta="-5"] {
 <body>
 <header><h1>Inventory Counts</h1></header>
 <main>
-  <div class="input-group flex">
+<div class="input-group flex" style="justify-content:space-between;align-items:center;">
+  <div class="flex" style="flex:1;min-width:0;">
     <select id="listSelect"></select>
     <input type="text" id="newListName" placeholder="New list name" />
     <button id="createListBtn">Create</button>
   </div>
+
+  <label class="image-toggle" for="qtyDefaultToggle" title="When on, qty will not auto-fill with 1 after select/reset.">
+    <span>No default qty</span>
+    <span class="toggle-switch">
+      <input type="checkbox" id="qtyDefaultToggle" />
+      <span class="toggle-slider" aria-hidden="true"></span>
+    </span>
+  </label>
+</div>
   <hr />
   <form id="itemForm" autocomplete="off">
     <div class="input-group flex" style="align-items:flex-end;">
@@ -61,13 +71,6 @@ button[data-delta="-5"] {
       </div>
       <div class="input-group" style="max-width:200px;"><label for="price">Price</label><input type="number" step="0.01" id="price" /></div>
       <div class="flex" style="margin-top:.5rem;align-items:flex-end;justify-content:space-between;gap:.75rem;flex-wrap:wrap;">
-  <label class="image-toggle" for="qtyDefaultToggle" title="When on, qty will not auto-fill with 1 after select/reset.">
-    <span>No default qty</span>
-    <span class="toggle-switch">
-      <input type="checkbox" id="qtyDefaultToggle" />
-      <span class="toggle-slider" aria-hidden="true"></span>
-    </span>
-  </label>
 
   <div class="flex" style="align-items:flex-end;gap:.5rem;">
     <button type="button" data-delta="-5">-5</button>
