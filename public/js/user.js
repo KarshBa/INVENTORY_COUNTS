@@ -11,32 +11,72 @@ const brandEl      = document.getElementById('brand');
 const descEl       = document.getElementById('desc');
 const priceEl      = document.getElementById('price');
 const customQtyEl  = document.getElementById('customQty');
-const enterBtn     = document.getElementById('enterBtn');
-const itemsTable   = document.querySelector('#itemsTable tbody');
-const grandTotalEl = document.getElementById('grandTotal');
+const enterBtn        = document.getElementById('enterBtn');
+const qtyDefaultToggle= document.getElementById('qtyDefaultToggle');
+const itemsTable      = document.querySelector('#itemsTable tbody');
+const grandTotalEl    = document.getElementById('grandTotal');
 
 let masterItems = {};
 const pad13 = c => c.padStart(13,'0');   // “1” → “0000000000001”
 let currentCode = null;
+
+const QTY_DEFAULT_SESSION_KEY = 'inventoryCounts:noDefaultQty';
+
+const getNoDefaultQty = () =>
+  sessionStorage.getItem(QTY_DEFAULT_SESSION_KEY) === '1';
+
+const setNoDefaultQty = enabled =>
+  sessionStorage.setItem(QTY_DEFAULT_SESSION_KEY, enabled ? '1' : '0');
+
+const getDefaultQtyValue = () =>
+  getNoDefaultQty() ? '' : '1';
+
+const getQtyNumber = () => {
+  const raw = String(customQtyEl.value ?? '').trim();
+  if (!raw) return 0;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const getSelectedListKey = () => listSelect.value;
+
+const formatQty = qty => Number.isInteger(qty) ? String(qty) : String(qty);
 /* ---------- initial ---------- */
 (async () => {
   await loadMaster();
   await loadLists();
 })();
 
+if (qtyDefaultToggle) {
+  qtyDefaultToggle.checked = getNoDefaultQty();
+  qtyDefaultToggle.addEventListener('change', () => {
+    setNoDefaultQty(qtyDefaultToggle.checked);
+    if (!detailsWrap || detailsWrap.style.display === 'none') {
+      customQtyEl.value = getDefaultQtyValue();
+    }
+  });
+}
+
+customQtyEl.value = getDefaultQtyValue();
+
 /* ---------- helpers ---------- */
 async function loadMaster() {
   const res = await fetch('/api/items');
   masterItems = await res.json();
 }
-async function loadLists() {
+
+async function loadLists(selectedKey) {
   const res   = await fetch('/api/lists');
   const lists = await res.json();
-  listSelect.innerHTML = Object.keys(lists)
-    .map(n => `<option value="${n}">${n}</option>`)
+
+  const entries = Object.entries(lists);
+  listSelect.innerHTML = entries
+    .map(([safeName, list]) => `<option value="${safeName}">${list.displayName || safeName}</option>`)
     .join('');
-  if (Object.keys(lists).length) {
-    listSelect.value = Object.keys(lists)[0];
+
+  if (entries.length) {
+    const fallbackKey = entries[0][0];
+    listSelect.value = selectedKey && lists[selectedKey] ? selectedKey : fallbackKey;
     renderList();
   }
 }
@@ -45,17 +85,20 @@ async function loadLists() {
 createListBtn.addEventListener('click', async () => {
   const name = newListName.value.trim();
   if (!name) return alert('Enter list name');
+
   const res = await fetch('/api/lists', {
     method : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body   : JSON.stringify({ name })
   });
+
   if (res.ok) {
-    await loadLists();
-    listSelect.value = name;
+    const created = await res.json();
+    await loadLists(created.safeName);
     newListName.value = '';
   } else {
-    alert('Create failed');
+    const err = await res.json().catch(() => null);
+    alert(err?.error || 'Create failed');
   }
 });
 listSelect.addEventListener('change', renderList);
@@ -77,9 +120,10 @@ selectBtn.addEventListener('click', async () => {
     }
   }
 
-  currentCode = code;                // remember for quantity updates
-  prepareDetails(code);              // fill Brand / Desc / Price
+  currentCode = code;
+  prepareDetails(code);
   detailsWrap.style.display = 'block';
+  applyDefaultQtyForSelection();
   customQtyEl.focus();
 });
 
@@ -95,16 +139,23 @@ function prepareDetails(code) {
   else   { brandEl.value = descEl.value = priceEl.value = ''; }
 }
 
+function applyDefaultQtyForSelection() {
+  customQtyEl.value = getDefaultQtyValue();
+}
+
 /* ---------- quantity updates ---------- */
 document.querySelectorAll('button[data-delta]')
   .forEach(btn =>
     btn.addEventListener('click', () => {
-      // just bump the qty field – don’t submit yet
-      const delta = parseInt(btn.dataset.delta, 10);
-      const curr  = parseInt(customQtyEl.value, 10) || 0;
-      customQtyEl.value = curr + delta;
+      const delta = parseFloat(btn.dataset.delta);
+      const curr  = getQtyNumber();
+      customQtyEl.value = String(curr + delta);
     })
   );
+
+enterBtn.addEventListener('click', () =>
+  updateQty(getQtyNumber())
+);
 enterBtn.addEventListener('click', () =>
   updateQty(parseInt(customQtyEl.value,10))
 );
@@ -114,7 +165,8 @@ customQtyEl.addEventListener('keydown', e => {
 
 async function updateQty(delta) {
   if (!delta) return;
-  const raw = itemCodeEl.value.trim().replace(/\D/g, ""); // raw digits
+
+  const raw = itemCodeEl.value.trim().replace(/\D/g, "");
   if (!raw) return;
 
   const payload = {
@@ -124,13 +176,19 @@ async function updateQty(delta) {
     price      : priceEl.value,
     delta
   };
-  const res = await fetch(`/api/lists/${listSelect.value}/items`, {
+
+  const res = await fetch(`/api/lists/${encodeURIComponent(getSelectedListKey())}/items`, {
     method : 'POST',
     headers: { 'Content-Type': 'application/json' },
     body   : JSON.stringify(payload)
   });
-  if (res.ok) { resetForm(); renderList(); }
-  else        { alert('Server error');   }
+
+  if (res.ok) {
+    resetForm();
+    renderList();
+  } else {
+    alert('Server error');
+  }
 }
 
 // --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
@@ -154,7 +212,7 @@ const normalizeUPC = raw => {
 function resetForm() {
   currentCode = null;
   itemCodeEl.value = '';
-  customQtyEl.value = 1;
+  customQtyEl.value = getDefaultQtyValue();
   detailsWrap.style.display = 'none';
   itemCodeEl.focus();
 }
@@ -162,23 +220,30 @@ function resetForm() {
 /* ---------- render list ---------- */
 async function renderList() {
   if (!listSelect.value) return;
-  const res = await fetch(`/api/lists/${listSelect.value}`);
+
+  const res = await fetch(`/api/lists/${encodeURIComponent(getSelectedListKey())}`);
   if (!res.ok) return;
+
   const list = await res.json();
   itemsTable.innerHTML = '';
+
   let grand = 0;
   Object.values(list.items).forEach(it => {
-    const total = it.qty * it.price;
+    const price = Number(it.price) || 0;
+    const qty   = Number(it.qty) || 0;
+    const total = qty * price;
     grand += total;
+
     itemsTable.insertAdjacentHTML('beforeend', `
       <tr>
         <td data-label="Code">${it.code}</td>
         <td data-label="Brand">${it.brand}</td>
         <td data-label="Description">${it.description}</td>
-        <td data-label="Price">${it.price.toFixed(2)}</td>
-        <td data-label="Qty">${it.qty}</td>
+        <td data-label="Price">${price.toFixed(2)}</td>
+        <td data-label="Qty">${formatQty(qty)}</td>
         <td data-label="Total">${total.toFixed(2)}</td>
       </tr>`);
   });
+
   grandTotalEl.textContent = `Grand Total: $${grand.toFixed(2)}`;
 }
