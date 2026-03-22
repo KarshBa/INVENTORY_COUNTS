@@ -72,7 +72,7 @@ async function loadLists(selectedKey) {
   const entries = Object.entries(lists);
 
   if (!entries.length) {
-    listSelect.innerHTML = `<option value="" disabled selected>Create a List</option>`;
+    listSelect.innerHTML = `<option value="" disabled selected hidden>Create a List</option>`;
     return;
   }
 
