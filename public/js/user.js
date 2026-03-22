@@ -156,9 +156,7 @@ document.querySelectorAll('button[data-delta]')
 enterBtn.addEventListener('click', () =>
   updateQty(getQtyNumber())
 );
-enterBtn.addEventListener('click', () =>
-  updateQty(parseInt(customQtyEl.value,10))
-);
+
 customQtyEl.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); enterBtn.click(); }
 });
