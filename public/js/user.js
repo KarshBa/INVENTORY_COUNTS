@@ -70,15 +70,19 @@ async function loadLists(selectedKey) {
   const lists = await res.json();
 
   const entries = Object.entries(lists);
+
+  if (!entries.length) {
+    listSelect.innerHTML = `<option value="" disabled selected>Create a List</option>`;
+    return;
+  }
+
   listSelect.innerHTML = entries
     .map(([safeName, list]) => `<option value="${safeName}">${list.displayName || safeName}</option>`)
     .join('');
 
-  if (entries.length) {
-    const fallbackKey = entries[0][0];
-    listSelect.value = selectedKey && lists[selectedKey] ? selectedKey : fallbackKey;
-    renderList();
-  }
+  const fallbackKey = entries[0][0];
+  listSelect.value = selectedKey && lists[selectedKey] ? selectedKey : fallbackKey;
+  renderList();
 }
 
 /* ---------- list create ---------- */
