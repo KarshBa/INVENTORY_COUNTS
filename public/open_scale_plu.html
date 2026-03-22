@@ -9,10 +9,18 @@
   <!-- ✦ extra tweaks specific to this tool ✦ -->
   <style>
     /* base look */
+    :root{
+      --bg: #faf6ee;
+      --page-css-width: 900px;
+      --page-gap: 18px;
+    }
     body            { font-family: Arial, sans-serif; font-size: 1.1rem; }
     header          { background:#CA1038; color:#fff; text-align:center; padding:1rem 0; }
     h1              { margin:0; font-size:1.8rem; padding:1rem 0; }
-	main            { margin-top: 1.5rem; }
+	  main            { margin-top: 1.5rem; }
+    section {
+      margin-top: 1.5rem;
+    }
 
     /* big blue buttons */
     button#refreshBtn,
@@ -103,6 +111,3 @@ fetchMany(5);
 <script src="https://item-list-handler.onrender.com/shared/nav.js?v=1.0.0"></script>
 </body>
 </html>
-
-
-
