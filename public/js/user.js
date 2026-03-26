@@ -115,12 +115,12 @@ selectBtn.addEventListener('click', async () => {
   // always start with the freshly-scanned code
   let code = normalizeUPC(raw);
 
-  /* ——— ask the back-end only if we don’t already know this code ——— */
+  // Ask the back-end whenever the exact key is not already cached.
   if (!masterItems[code]) {
     const hit = await fetch(`/api/item/${raw}`).then(r => r.json());
     if (hit.code) {
-      masterItems[hit.code] = hit;   // cache for later scans
-      code = hit.code;               // switch to canonical catalogue key
+      masterItems[hit.code] = hit;
+      code = hit.code;
     }
   }
 
@@ -195,19 +195,11 @@ async function updateQty(delta) {
 
 // --- helper: normalise any scanner payload to 13-digit / no-check-digit ---
 const normalizeUPC = raw => {
-  let d = String(raw).replace(/\D/g, "");
+  const d = String(raw).replace(/\D/g, "");
   if (!d) return "";
 
-  // Variable-weight scale label with stripped check digit (11 digits)
-  if (d.length === 11 && d[0] === "2") {
-    // canonical catalogue code: 00 + first-7 + 0000
-    return ("00" + d.slice(0, 7) + "0000").padStart(13, "0");
-  }
-
-  // UPC-A (12 digits) – strip the check digit
-  if (d.length === 12) d = d.slice(0, 11);
-
-  // EAN-13 and everything else: **keep all 13 digits**
+  // Keep the scanned/uploaded code exact on the client too.
+  // The server does tolerant matching for stripped vs non-stripped scanners.
   return d.padStart(13, "0");
 };
 

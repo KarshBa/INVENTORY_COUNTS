@@ -67,18 +67,11 @@ function pick(row, aliases){
 //  • Scale label stripped (11 d) → 00 + PLU + 0000  → 13 digits
 // -------------------------------------------------------------------------
 const normalizeUPC = raw => {
-  let d = String(raw).replace(/\D/g, "");
+  const d = String(raw).replace(/\D/g, "");
   if (!d) return "";
 
-  // 11-digit variable-weight (scanner already removed check digit)
-  if (d.length === 11 && d[0] === "2") {
-    return ("00" + d.slice(0, 7) + "0000").padStart(13, "0");
-  }
-
-  // UPC-A 12 digits → remove *one* check digit → 11 significant
-  if (d.length === 12) d = d.slice(0, 11);
-
-  // everything else (already 13 digits) → leave intact
+  // For normal catalogue/master-list codes, keep the uploaded value exactly
+  // as-is and only left-pad to 13 for storage/lookup consistency.
   return d.padStart(13, "0");
 };
 
@@ -94,6 +87,33 @@ const normalizeUPC = raw => {
  * The first 7 (or 6) digits become an EAN-13 “catalogue” code:
  *     00 + <7-digits> + 0000   → 13 digits  (used in item_list.csv)
  * --------------------------------------------------------------*/
+const makeLookupCandidates = raw => {
+  const digits = String(raw).replace(/\D/g, "");
+  if (!digits) return [];
+
+  const out = [];
+  const seen = new Set();
+
+  const push = value => {
+    if (!value) return;
+    const key = value.padStart(13, "0");
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(key);
+    }
+  };
+
+  // Exact scanned value
+  push(digits);
+
+  // Scanner stripped / did not strip last digit
+  if (digits.length > 1) {
+    push(digits.slice(0, -1));
+  }
+
+  return out;
+};
+
 const decodeScale = upc => {
   // must be 11 **or** 12 digits and start with “2”
   if (!/^\d{11,12}$/.test(upc) || upc[0] !== '2') return null;
@@ -293,22 +313,28 @@ app.delete('/api/slists/:name',   (req,res)=>delList('slists',req,res));
 // 1) NEW SINGLE-ITEM LOOK-UP  (drop it right after `app.get("/api/items" …)`
 // ────────────────────────────────────────────────────────────────
 app.get("/api/item/:code", (req, res) => {
-  const raw   = String(req.params.code||"").replace(/\D/g,"");
-  // ➊ normal catalogue code ------------------------------------
-  let code13  = normalizeUPC(raw);
-  let hit     = masterItems.get(code13);
+  const raw = String(req.params.code || "").replace(/\D/g, "");
+  let hit = null;
 
-  // ➋ variable-weight (scale) label ----------------------------
-  if(!hit){
-    const s = decodeScale(raw);
-    if(s){
-      const cat  = s.catCodes.find(c => masterItems.has(c));
-      hit = cat ? { ...masterItems.get(cat), price: s.price }
-                : { code: s.catCodes[0],    price: s.price };   // fallback
+  // ➊ variable-weight (scale) label ----------------------------
+  const s = decodeScale(raw);
+  if (s) {
+    const cat = s.catCodes.find(c => masterItems.has(c));
+    hit = cat
+      ? { ...masterItems.get(cat), price: s.price }
+      : { code: s.catCodes[0], price: s.price };
+  }
+
+  // ➋ normal catalogue code with tolerant matching -------------
+  if (!hit) {
+    const candidates = makeLookupCandidates(raw);
+    const found = candidates.find(code => masterItems.has(code));
+    if (found) {
+      hit = masterItems.get(found);
     }
   }
 
-  res.json(hit || {});        // {} = “not found”
+  res.json(hit || {});
 });
 
 // generic helpers for both list systems
@@ -449,18 +475,17 @@ app.get("/api/lists/:name",(req,res)=>{
 
 app.post("/api/lists/:name/items",(req,res)=>{
   // pull from body, then canonicalise
-  let { itemCode, brand, description, price, delta } = req.body;
-const raw = String(itemCode||'').replace(/\D/g,'');
-  
-let scale = decodeScale(raw);                 // 🆕 check for scale label
-if (scale) {
-  // pick the catalogue code that actually exists in masterItems,
-  // otherwise fall back to the first (7-digit) candidate
-  itemCode = scale.catCodes.find(c => masterItems.has(c)) || scale.catCodes[0];
-  price    = scale.price;                     // price comes from the label!
-} else {
-  itemCode = normalizeUPC(raw);               // normal barcode path
-}
+let { itemCode, brand, description, price, delta } = req.body;
+  const raw = String(itemCode || '').replace(/\D/g, '');
+
+  let scale = decodeScale(raw);
+  if (scale) {
+    itemCode = scale.catCodes.find(c => masterItems.has(c)) || scale.catCodes[0];
+    price = scale.price;
+  } else {
+    const candidates = makeLookupCandidates(raw);
+    itemCode = candidates.find(code => masterItems.has(code)) || normalizeUPC(raw);
+  }
 
 if(!itemCode) return res.status(400).json({error:"Missing code"});
   const lists = loadLists();
